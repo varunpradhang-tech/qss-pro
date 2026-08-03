@@ -1,0 +1,1108 @@
+{
+  "version": 1,
+  "description": "QSS Pro drawing-reader golden tests. Exact tests lock known-good quantities; issue tests block known-bad reader behavior until fixed.",
+  "defaultTolerance": {
+    "lengthM": 0.003,
+    "areaM2": 0.003,
+    "volumeM3": 0.003,
+    "dimensionM": 0.003
+  },
+  "tests": [
+    {
+      "id": "trevoc-b64-beam-concrete-and-shuttering",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B64",
+      "mode": "all",
+      "expected": {
+        "count": 2,
+        "widthM": 0.6,
+        "depthM": 0.65,
+        "slabThicknessM": 0.15,
+        "bottomLengthM": 27.5,
+        "sideLengthM": 27.5,
+        "bottomAreaM2": 15.36,
+        "sideAreaM2": 25.6,
+        "totalShutteringM2": 40.96,
+        "grossConcreteM3": 10.725,
+        "columnCapDeductionM3": 0.742,
+        "netConcreteCapsExcludedM3": 9.983
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003",
+        "QSS-BEAM-010"
+      ]
+    },
+    {
+      "id": "trevoc-b6c-must-not-use-incomplete-geometry",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B6C",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.6,
+        "netBottomLengthM": 8.845,
+        "sideLengthM": 9.345,
+        "bottomAreaM2": 3.98,
+        "netConcreteCapsExcludedM3": 2.388,
+        "localSlabThicknessesM": [
+          0.2,
+          0.15
+        ],
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B6C verified basis: bottom length = 9.345 - 0.500 = 8.845 m. Side length = 9.345 m. Larger span side slab thickness is 200 mm from slab panel text; shorter unmarked span uses 150 mm UNO note."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003",
+        "QSS-BEAM-010"
+      ]
+    },
+    {
+      "id": "trevoc-b15-must-include-1-5m-terminal-span-without-overrun",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B15",
+      "mode": "nearestLabel",
+      "label": {
+        "x": 1153819,
+        "y": 213448
+      },
+      "labelToleranceMm": 500,
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.6,
+        "slabThicknessM": 0.15,
+        "sideLengthM": 15.85,
+        "mustHaveCadOrGridDimension": true,
+        "notes": "B15 verified span basis from CAD dimensions: 7.000 + 7.350 + 1.500 = 15.850 m. This test guards against missing the terminal 1.500 m span and against over-reading beyond the actual B15 run."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b31b-must-not-double-count-terminal-span",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B31B",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.6,
+        "slabThicknessM": 0.15,
+        "localSlabThicknessesM": [
+          0.175,
+          0.15
+        ],
+        "bottomLengthM": 15.65,
+        "sideLengthM": 15.65,
+        "bottomAreaM2": 7.043,
+        "sideAreaM2": 14.085,
+        "totalShutteringM2": 21.128,
+        "grossConcreteM3": 4.226,
+        "notes": "B31B CAD segmented span basis: 6.900 + 7.550 + 1.200 = 15.650 m. The terminal 1.200 m span must be included once, not duplicated as a short-continuation row."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b31a-special-inner-and-outer-side-face-rule",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B31A",
+      "mode": "nearestLabel",
+      "label": {
+        "x": 1134759,
+        "y": 199386
+      },
+      "labelToleranceMm": 500,
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.65,
+        "slabThicknessM": 0.15,
+        "localSlabThicknessesM": [
+          0.175,
+          0.15
+        ],
+        "bottomLengthM": 8.73,
+        "sideLengthM": 9.05,
+        "bottomAreaM2": 3.929,
+        "sideAreaM2": 8.925,
+        "totalShutteringM2": 12.854,
+        "grossConcreteM3": 2.554,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B31A verified by user: total length 9.050 m; bottom/net concrete deducts 0.320 m column = 8.730 m. Inner side uses 8.730 m and 150 mm slab from table. Outer side uses 9.050 - 0.450 + 0.500 + 0.500 = 9.600 m and 175 mm slab, because it runs to column end faces and deducts B57 face."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b33a-must-use-local-175-and-default-150-side-slabs",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B33A",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.6,
+        "slabThicknessM": 0.15,
+        "localSlabThicknessesM": [
+          0.175,
+          0.15
+        ],
+        "bottomLengthM": 16.5,
+        "sideLengthM": 16.5,
+        "bottomAreaM2": 7.425,
+        "sideAreaM2": 14.438,
+        "totalShutteringM2": 21.863,
+        "grossConcreteM3": 4.455,
+        "mustHaveCadOrGridDimension": true,
+        "notes": "B33A must not use only the 150 mm UNO note for both side faces. One side reads the local 175 mm slab marking and the other side uses the 150 mm default/table value."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b35a-elevation-beam-broken-and-continuous-side-rule",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B35A",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.65,
+        "slabThicknessM": 0.15,
+        "bottomLengthM": 12.225,
+        "sideLengthM": 12.225,
+        "bottomAreaM2": 5.501,
+        "sideAreaM2": 14.059,
+        "totalShutteringM2": 19.56,
+        "grossConcreteM3": 3.575,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B35A is one beam in two spans: 7.475 + 4.750 = 12.225 m. Broken/dotted side deducts 150 mm slab thickness; continuous elevation side is full 650 mm depth."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b35-elevation-beam-hidden-and-continuous-side-rule",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B35",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.65,
+        "slabThicknessM": 0.175,
+        "localSlabThicknessesM": [
+          0.175,
+          0.15
+        ],
+        "bottomLengthM": 9.25,
+        "sideLengthM": 9.25,
+        "bottomAreaM2": 4.163,
+        "sideAreaM2": 10.406,
+        "totalShutteringM2": 14.569,
+        "grossConcreteM3": 2.706,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B35 has one hidden/broken edge and one continuous elevation edge. Hidden side deducts the local 175 mm slab thickness; continuous side is full 650 mm height."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b1-must-use-six-paired-hidden-edge-spans",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B1",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.45,
+        "depthM": 0.65,
+        "slabThicknessM": 0.15,
+        "bottomLengthM": 35.875,
+        "sideLengthM": 35.875,
+        "bottomAreaM2": 16.144,
+        "sideAreaM2": 35.875,
+        "totalShutteringM2": 52.019,
+        "grossConcreteM3": 10.493,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B1 is one continuous beam from left to right, measured by six span panels: 9.250 + 7.625 + 4.750 + 7.625 + 4.775 + 1.850 = 35.875 m. The app must present it as one beam, not multiple beams. Both sides are hidden/broken slab sides, so both side faces deduct 150 mm slab thickness."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "trevoc-b2-must-measure-continuous-beam-panel-by-panel",
+      "drawing": "../../work/trevoc-b1-framing.dxf",
+      "itemType": "beam",
+      "member": "B2",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.3,
+        "depthM": 0.6,
+        "slabThicknessM": 0.15,
+        "bottomLengthM": 39.475,
+        "sideLengthM": 39.475,
+        "bottomAreaM2": 11.843,
+        "sideAreaM2": 35.528,
+        "totalShutteringM2": 47.37,
+        "grossConcreteM3": 7.106,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "B2 is one continuous beam, but must be measured panel by panel because vertical beams intersect it. Visible panels: 4.700 + 5.001 + 3.849 + 3.876 + 5.150 + 4.008 + 3.966 + 3.862 + 3.863 + 1.200 = 39.475 m. Both sides are hidden/broken slab sides."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "gpl-t2b1-must-use-actual-pod-beam-edge-run",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B1",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "widthM": 0.24,
+        "depthM": 0.65,
+        "slabThicknessM": 0.175,
+        "bottomLengthM": 4.234,
+        "sideLengthM": 4.234,
+        "bottomAreaM2": 1.016,
+        "sideAreaM2": 4.022,
+        "totalShutteringM2": 5.039,
+        "grossConcreteM3": 0.66,
+        "mustHaveCadOrGridDimension": true,
+        "mustNotNeedReview": true,
+        "notes": "T2B1 must use its actual paired POD BEAM edge run length 4.234 m. It must not be trimmed to 3.777 m by midpoint to T2B2, and it must not inherit the T2B2 continuation span."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-007",
+        "QSS-BEAM-008",
+        "QSS-SLAB-003"
+      ]
+    },
+    {
+      "id": "gpl-t2-p9-s7-slab-panel-must-ignore-wall-column-offsets",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "slab",
+      "member": "S7",
+      "mode": "nearestLabel",
+      "label": {
+        "x": 3041076,
+        "y": 825428
+      },
+      "labelToleranceMm": 1000,
+      "expected": {
+        "count": 1,
+        "lengthM": 5.777,
+        "breadthM": 4.436,
+        "thicknessM": 0.2,
+        "areaM2": 25.627,
+        "concreteM3": 5.125,
+        "mustNotNeedReview": true,
+        "notes": "User-verified P9/S7 slab panel. Boundaries: left T2B58 beam side plus T1PW3/T1PW2 wall faces; right T2W1/T2W9 wall faces with T2MB60 beam face between; top T2B1 beam face; bottom T2B23 beam face. Wall/column offsets must be ignored and the slab must be measured as one clean rectangular bay: 5.777 m x 4.436 m x 0.200 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-SLAB-001",
+        "QSS-SLAB-002",
+        "QSS-SLAB-003",
+        "QSS-SLAB-006",
+        "QSS-SLAB-007",
+        "QSS-SLAB-008"
+      ]
+    },
+    {
+      "id": "gpl-t2-p56-s22-slab-panel-must-ignore-wall-column-offsets",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "slab",
+      "member": "S22",
+      "mode": "nearestLabel",
+      "label": {
+        "x": 3077338,
+        "y": 814238
+      },
+      "labelToleranceMm": 1000,
+      "expected": {
+        "count": 1,
+        "lengthM": 4.605,
+        "breadthM": 0.465,
+        "thicknessM": 0.125,
+        "areaM2": 2.141,
+        "concreteM3": 0.268,
+        "mustNotNeedReview": true,
+        "notes": "User-verified P56/S22 narrow slab panel. Boundaries: left T2W30 wall face; right T2B87 beam face; top T2B48 beam face; bottom pardi wall face. Wall/column offsets must be ignored and the slab must be measured as one clean rectangular bay: 4.605 m x 0.465 m x 0.125 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-SLAB-001",
+        "QSS-SLAB-002",
+        "QSS-SLAB-003",
+        "QSS-SLAB-006",
+        "QSS-SLAB-007",
+        "QSS-SLAB-008"
+      ]
+    },
+    {
+      "id": "gpl-t2-x-cross-open-to-sky-bay-must-be-cutout",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "slab",
+      "member": "S5",
+      "mode": "nearestLabel",
+      "label": {
+        "x": 3062680,
+        "y": 829820
+      },
+      "labelToleranceMm": 2000,
+      "expected": {
+        "count": 1,
+        "minOpeningAreaM2": 5,
+        "notes": "X-crossed bay / OPEN TO SKY style area near T2W5A/T2W5B is no slab and must be treated as cutout/opening. Deductions are then applied as per IS measurement rules."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-SLAB-001",
+        "QSS-SLAB-002",
+        "QSS-SLAB-003",
+        "QSS-SLAB-006",
+        "QSS-SLAB-007",
+        "QSS-SLAB-008",
+        "QSS-SLAB-004"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b13-bottom-and-side-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B13",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 1.752,
+        "sideLengthM": 1.752,
+        "notes": "User correction: short beam T2B13 bottom is correctly 1.752 m from beam side to next RCC member; sides must not extend to the far end of the next RCC member."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b19-bottom-and-side-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B19",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.25,
+        "sideLengthM": 2.25,
+        "notes": "User correction: T2B19 bottom and side lengths are both 2.250 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b20-bottom-and-side-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B20",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.25,
+        "sideLengthM": 2.25,
+        "notes": "User correction: T2B20 bottom and side lengths are both 2.250 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b21-bottom-must-match-correct-side-run",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B21",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.25,
+        "sideLengthM": 2.25,
+        "notes": "User correction: without column cap, T2B21 bottom and side length must be the same. Side run was correct; bottom must match it."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b22-bottom-must-match-correct-side-run",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B22",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.45,
+        "sideLengthM": 2.45,
+        "notes": "User correction: without column cap, T2B22 bottom and side length must be the same. Side run was correct; bottom must match it."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b25-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B25",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 5.1,
+        "sideLengthM": 5.1,
+        "notes": "User correction: T2B25 is a simple beam; correct length is 5.100 m, not 3.794 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b26-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B26",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 1.05,
+        "sideLengthM": 1.05,
+        "notes": "User correction: T2B26 correct length is 1.050 m, not 2.686 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b31-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B31",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 4.58,
+        "sideLengthM": 4.58,
+        "notes": "User correction: T2B31 actual length is 4.580 m, not 3.679 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b32-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B32",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.024,
+        "sideLengthM": 2.024,
+        "notes": "User correction: T2B32 actual length is 2.024 m, not 3.226 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b33-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B33",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.025,
+        "sideLengthM": 2.025,
+        "notes": "User correction: T2B33 actual length is 2.025 m, not 2.498 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b34-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B34",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 4.58,
+        "sideLengthM": 4.58,
+        "notes": "User correction: T2B34 actual length is 4.580 m, not 4.407 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b37-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B37",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 1.8,
+        "sideLengthM": 1.8,
+        "notes": "User correction: T2B37 actual length is 1.800 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b38-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B38",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 5.39,
+        "sideLengthM": 5.39,
+        "notes": "User correction: T2B38 actual length is 5.390 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b41a-side-must-match-correct-bottom-run",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B41A",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.4,
+        "sideLengthM": 2.4,
+        "notes": "User correction: user wrote T241A; drawing member is T2B41A. Bottom was correct and side length must match it for without-column-cap method."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009",
+        "QSS-BEAM-004"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b43-bottom-must-match-correct-side-run",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B43",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.39,
+        "sideLengthM": 2.39,
+        "notes": "User correction: T2B43 sides were correct but bottom was short. Without column cap, bottom must match side run."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b46-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B46",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.39,
+        "sideLengthM": 2.39,
+        "notes": "User correction: T2B46 actual length is 2.390 m, not 1.623 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b47-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B47",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.575,
+        "sideLengthM": 2.575,
+        "notes": "User correction: T2B47 must use full 2.575 m inner dotted side, not the short 0.980 m fragment before the beam joint."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b48-bottom-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B48",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 0.465,
+        "notes": "User correction: T2B48 bottom is 0.465 m. Sides are asymmetric: outer side 0.700 m and inner side equals bottom, so a single sideLength scalar is insufficient."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b49-bottom-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B49",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 4.41,
+        "sideLengthM": 4.41,
+        "notes": "User correction: T2B49 bottom should be 4.410 m; app previously used 3.450 m while side was correct."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b50-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B50",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 4.625,
+        "sideLengthM": 4.625,
+        "notes": "User correction: T2B50 bottom and sides should both be 4.625 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b51-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B51",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.93,
+        "sideLengthM": 2.93,
+        "notes": "User correction: T2B51 is a simple beam, actual length is 2.930 m and no 0.182 m deduction is required."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b52-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B52",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 2.93,
+        "sideLengthM": 2.93,
+        "notes": "User correction: T2B52 is a simple beam, actual bottom and side length is 2.930 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b53-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B53",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 4.625,
+        "sideLengthM": 4.625,
+        "notes": "User correction: T2B53 actual bottom and side length is 4.625 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    },
+    {
+      "id": "gpl-t2-horizontal-t2b54-bottom-length",
+      "drawing": "../../work/gpl-sig3-t2-bas-st-300-r1.dxf",
+      "itemType": "beam",
+      "member": "T2B54",
+      "mode": "all",
+      "expected": {
+        "count": 1,
+        "bottomLengthM": 1.25,
+        "notes": "User correction: T2B54 bottom should be 1.250 m; app previously used 0.770 m."
+      },
+      "ruleIds": [
+        "QSS-CAD-001",
+        "QSS-CAD-004",
+        "QSS-QA-001",
+        "QSS-QA-002",
+        "QSS-QA-003",
+        "QSS-BEAM-001",
+        "QSS-BEAM-003",
+        "QSS-BEAM-005",
+        "QSS-BEAM-009"
+      ]
+    }
+  ]
+}

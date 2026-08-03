@@ -1,0 +1,2416 @@
+{
+  "verified": [
+    {
+      "id": "QB1",
+      "sizeText": "230x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331915,
+      "widthM": 0.23,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 11.781430224863406,
+      "sideSqm": 46.10124870598723,
+      "totalShutteringSqm": 57.88267893085064,
+      "remarks": "Verified by paired stitched beam faces near B(230X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB2",
+      "sizeText": "750x600",
+      "orientation": "Vertical",
+      "lengthM": 41.09841720712907,
+      "widthM": 0.75,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 30.8238129053468,
+      "sideSqm": 36.98857548641616,
+      "totalShutteringSqm": 67.81238839176297,
+      "remarks": "Verified by paired stitched beam faces near BEAM(750X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB3",
+      "sizeText": "450x600",
+      "orientation": "Vertical",
+      "lengthM": 24.548417603605078,
+      "widthM": 0.45,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 11.046787921622284,
+      "sideSqm": 22.09357584324457,
+      "totalShutteringSqm": 33.140363764866855,
+      "remarks": "Verified by paired stitched beam faces near BEAM(450X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB4",
+      "sizeText": "750x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331915,
+      "widthM": 0.75,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 38.41770725498937,
+      "sideSqm": 46.10124870598723,
+      "totalShutteringSqm": 84.5189559609766,
+      "remarks": "Verified by paired stitched beam faces near BEAM(750X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB5",
+      "sizeText": "750x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331915,
+      "widthM": 0.75,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 38.41770725498937,
+      "sideSqm": 46.10124870598723,
+      "totalShutteringSqm": 84.5189559609766,
+      "remarks": "Verified by paired stitched beam faces near BEAM(750X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB6",
+      "sizeText": "900x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331915,
+      "widthM": 0.9,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 46.10124870598724,
+      "sideSqm": 46.10124870598723,
+      "totalShutteringSqm": 92.20249741197446,
+      "remarks": "Verified by paired stitched beam faces near BEAM(900X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB7",
+      "sizeText": "900x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331915,
+      "widthM": 0.9,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 46.10124870598724,
+      "sideSqm": 46.10124870598723,
+      "totalShutteringSqm": 92.20249741197446,
+      "remarks": "Verified by paired stitched beam faces near BEAM(900X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB8",
+      "sizeText": "450x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331857,
+      "widthM": 0.45,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 23.050624352993356,
+      "sideSqm": 46.101248705986706,
+      "totalShutteringSqm": 69.15187305898006,
+      "remarks": "Verified by paired stitched beam faces near B(450X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    },
+    {
+      "id": "QB9",
+      "sizeText": "300x600",
+      "orientation": "Vertical",
+      "lengthM": 51.22360967331857,
+      "widthM": 0.3,
+      "depthM": 0.6,
+      "sideHeightM": 0.44999999999999996,
+      "bottomSqm": 15.36708290199557,
+      "sideSqm": 46.101248705986706,
+      "totalShutteringSqm": 61.46833160798228,
+      "remarks": "Verified by paired stitched beam faces near BEAM(300X600); without column cap; slab thickness 0.15 m deducted from both sides."
+    }
+  ],
+  "review": [
+    {
+      "text": "LIFT 2300X3000",
+      "x": 6263851.577542918,
+      "y": 421502.21034627705,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "LIFT 2300X3000",
+      "x": 6261251.57753879,
+      "y": 421502.21034628124,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "LIFT 2300X3000",
+      "x": 6258651.577538725,
+      "y": 421502.21032855817,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1714289.377191901,
+      "y": -996116.3727955174,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1711295.793556324,
+      "y": -996127.3265401437,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713803.57311031,
+      "y": -991411.6812374773,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713819.210309151,
+      "y": -994499.3580480231,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713946.356352042,
+      "y": -997269.645315672,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1710532.5,
+      "y": -995362.8727955176,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1716244.147948402,
+      "y": -990488.4052548887,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "230X600",
+      "x": 1708881.924080976,
+      "y": -986889.2208836555,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1400X720",
+      "x": 1710918.150953052,
+      "y": -988473.587542072,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1100X720",
+      "x": 1712501.320668608,
+      "y": -988473.587542072,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 300X550",
+      "x": 1714045.394139627,
+      "y": -988473.587542072,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2165X1150",
+      "x": 1716255.982155397,
+      "y": -992047.9737624773,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1285X620",
+      "x": 1716267.019660033,
+      "y": -988926.9075835478,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1709053.243779036,
+      "y": -989132.0735703752,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 900X620",
+      "x": 1711316.326751116,
+      "y": -990356.1973646455,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 6700X11755",
+      "x": 1705952.348892103,
+      "y": -994655.041483312,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703458,
+      "y": -986208,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703618,
+      "y": -998188.5000000001,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1700810.5,
+      "y": -995733,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1700810.5,
+      "y": -989921,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1727613.15640053,
+      "y": -994265.3044826431,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1000X1050",
+      "x": 1729568.744959404,
+      "y": -990862.0081281135,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT IN SLAB 200X1450-950X200",
+      "x": 1724810.427961632,
+      "y": -991553.4659548221,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1734602.871974662,
+      "y": -988072.2597735452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(450X600)",
+      "x": 1726506.332517467,
+      "y": -989139.8031763865,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "230 x 600",
+      "x": 1655255.189217529,
+      "y": -977463.2793321245,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "300 x 600",
+      "x": 1655255.189217529,
+      "y": -978163.279332124,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "450 x 600",
+      "x": 1655255.189217529,
+      "y": -979563.2793321277,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "600 x 600",
+      "x": 1655255.189217529,
+      "y": -980263.2793321233,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "900 x 750",
+      "x": 1655255.189217526,
+      "y": -983063.2793321179,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1707834.107498141,
+      "y": -995362.8727955176,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727503.346351308,
+      "y": -989130.995777837,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727455.559593205,
+      "y": -995625.5651940459,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727442.608432632,
+      "y": -998849.6629074409,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1721820.533001304,
+      "y": -998910.36726777,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1722012.161239714,
+      "y": -998027.4628836946,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2650X3100",
+      "x": 1721527.306617052,
+      "y": -997690.7287500222,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2650X3100",
+      "x": 1724596.361053976,
+      "y": -997635.7954107156,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2350X3100",
+      "x": 1727080.77026843,
+      "y": -997717.0168504193,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1714289.377191901,
+      "y": -1032866.498966112,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1711295.793556324,
+      "y": -1030548.041810845,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713793.77652453,
+      "y": -1034624.15174058,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713802.068211654,
+      "y": -1031789.277212308,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2500X2415",
+      "x": 1713843.718311571,
+      "y": -1029072.020369734,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1710532.5,
+      "y": -1033619.998966113,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1716244.147948402,
+      "y": -1036186.9630961,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "230X600",
+      "x": 1708881.924080976,
+      "y": -1039811.113360921,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1400X720",
+      "x": 1710918.150953052,
+      "y": -1037930.634833473,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1100X720",
+      "x": 1712501.320668608,
+      "y": -1037930.634833473,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 300X550",
+      "x": 1714045.394139627,
+      "y": -1037930.634833473,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2165X1150",
+      "x": 1716255.982155397,
+      "y": -1034356.248613068,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1285X620",
+      "x": 1716267.019660033,
+      "y": -1037477.314791998,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1709053.243779036,
+      "y": -1037579.627863392,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 900X620",
+      "x": 1711273.850542852,
+      "y": -1036103.103559365,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 6700X11755",
+      "x": 1705952.348892103,
+      "y": -1031749.180892233,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703458,
+      "y": -1040467.368350989,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1704677.978885047,
+      "y": -1027716.656587199,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1700810.5,
+      "y": -1033249.87176163,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1700810.5,
+      "y": -1039061.87176163,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1727613.15640053,
+      "y": -1034914.745869909,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1000X1050",
+      "x": 1729568.744959404,
+      "y": -1035724.173670389,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT IN SLAB 200X1450-950X200",
+      "x": 1724810.427961632,
+      "y": -1034850.756420723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1707834.107498141,
+      "y": -1033619.998966113,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727503.346351308,
+      "y": -1037625.052694651,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727455.559593205,
+      "y": -1031049.803156943,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727442.608432632,
+      "y": -1027825.705443548,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1721820.533001304,
+      "y": -1027765.001083219,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1722012.161239714,
+      "y": -1030210.729478208,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2650X3100",
+      "x": 1721527.306617052,
+      "y": -1028713.493625523,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2650X3100",
+      "x": 1724620.022484887,
+      "y": -1029076.025566668,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2350X3100",
+      "x": 1726907.25310842,
+      "y": -1028979.02983969,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "750 x 600",
+      "x": 1655255.189217525,
+      "y": -981663.2793321204,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1708891.21160375,
+      "y": -1001913.751949995,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1708911.908913879,
+      "y": -1027079.01525279,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1704588.322161582,
+      "y": -1000219.073833896,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2300X950",
+      "x": 1703834.919784289,
+      "y": -999389.8067608743,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1709216.508673197,
+      "y": -1017145.19856109,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1709222.268880445,
+      "y": -1006918.927046261,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2450X1170",
+      "x": 1703911.913859387,
+      "y": -1029018.114397745,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1700764.691012287,
+      "y": -999764.8927039874,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1704475.752144599,
+      "y": -1003809.396323976,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1712202.298866153,
+      "y": -1003690.668979083,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1719005.338050129,
+      "y": -1001913.751949995,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1726517.092926759,
+      "y": -1001763.752415604,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1712352.298866153,
+      "y": -1013736.500277579,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1721881.64907263,
+      "y": -1013736.500277579,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1727438.632006481,
+      "y": -1012473.801229873,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1720330.286080897,
+      "y": -1002379.748392683,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1722295.104012924,
+      "y": -1022808.247680739,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1719725.198029935,
+      "y": -1003931.607646037,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1200X440",
+      "x": 1721225.520630782,
+      "y": -1024745.583932647,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 230X440",
+      "x": 1723738.026205887,
+      "y": -1024745.583932647,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1220X440",
+      "x": 1724956.724347599,
+      "y": -1004353.551801081,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1712202.298866153,
+      "y": -1008847.314679762,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1721310.173951987,
+      "y": -1008847.314679762,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727537.926357197,
+      "y": -1008847.314679761,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1704616.95699133,
+      "y": -1008847.314679762,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1704778.665929642,
+      "y": -1013861.269311163,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703423.165068064,
+      "y": -1004640.085541887,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703423.165068064,
+      "y": -1016024.37530825,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1703423.165068063,
+      "y": -1026832.92147442,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1719336.395326824,
+      "y": -1006918.927046261,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1717767.606291042,
+      "y": -1011713.045123428,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1709242.670118441,
+      "y": -1011713.045123428,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1712202.298866153,
+      "y": -1019196.523714368,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1721310.173951987,
+      "y": -1019196.523714368,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1727537.926357197,
+      "y": -1019196.523714368,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1704616.95699133,
+      "y": -1019196.523714368,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1719336.395326824,
+      "y": -1017268.136080868,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1717767.606291042,
+      "y": -1022062.254158035,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1709216.508673197,
+      "y": -1022270.788258333,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1712202.298866153,
+      "y": -1024389.087048297,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1727462.293437391,
+      "y": -1022959.718781001,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1717911.257759455,
+      "y": -1027212.170019209,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743821.31391537,
+      "y": -986997.5699000491,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1736696.970539503,
+      "y": -996740.560695531,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1732305.698244666,
+      "y": -994313.7396047013,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2050X1100",
+      "x": 1736748.570553877,
+      "y": -994164.3075234338,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1350X1100",
+      "x": 1738884.03823212,
+      "y": -994164.3075234338,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1732185.000264458,
+      "y": -1000876.918630031,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1734367.329482843,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1734367.329482843,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1741197.541267912,
+      "y": -990505.3396223449,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1500X1100",
+      "x": 1734206.986933116,
+      "y": -1033133.850034913,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1744021.066110677,
+      "y": -990558.4905695613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1753021.066110677,
+      "y": -990558.4905695613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1762021.066110677,
+      "y": -990558.4905695613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1771021.066110677,
+      "y": -990558.4905695613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1780021.066110677,
+      "y": -990558.4905695613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1789021.066110677,
+      "y": -990558.4905695608,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1735021.066110677,
+      "y": -990558.4905695608,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1732185.000264458,
+      "y": -1007495.321791292,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X750)",
+      "x": 1732185.000264458,
+      "y": -1016883.888209661,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1735019.908813495,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1743579.654764009,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1752579.654764009,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761579.654764009,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1770579.654764009,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1779579.654764009,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1788117.161807867,
+      "y": -1009024.625021729,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1735019.908813495,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1743579.654764009,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1752579.654764009,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761579.654764009,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1770579.654764009,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1779579.654764009,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1788117.161807867,
+      "y": -1019124.629234796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1734603.80404064,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743562.953813492,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743562.953813492,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743799.428371288,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1752758.578144141,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1752758.578144141,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1752995.052701937,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1761954.202474789,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1761954.202474789,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1762190.677032586,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1770705.25463678,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1770705.25463678,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1770941.729194577,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779526.50240435,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779526.50240435,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779762.976962147,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1788581.735523844,
+      "y": -1032647.112040667,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1788581.735523844,
+      "y": -1029936.757166612,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1788818.21008164,
+      "y": -1035024.861493465,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761670.842419367,
+      "y": -988072.3663000754,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779821.31391537,
+      "y": -986997.5699000491,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1797493.070212622,
+      "y": -986997.5699000491,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "400 x 600",
+      "x": 1655255.189217527,
+      "y": -978863.279332123,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "700 x 600",
+      "x": 1655255.189217529,
+      "y": -980963.2793321206,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1752602.871974663,
+      "y": -988072.2597735452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1770602.871974662,
+      "y": -988072.2597735452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1788590.37901852,
+      "y": -988072.2597735452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1806140.37901852,
+      "y": -988072.2597735452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1725820.435651901,
+      "y": -986795.3317288234,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1716328.768928697,
+      "y": -986577.1130471138,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(230X600)",
+      "x": 1719046.136031407,
+      "y": -989139.8031763865,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1734602.871974662,
+      "y": -1038603.108577443,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(450X600)",
+      "x": 1726521.392806814,
+      "y": -1038655.224110482,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743821.31391537,
+      "y": -1039719.285162481,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779821.31391537,
+      "y": -1039755.793468638,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1797744.344540198,
+      "y": -1038636.249755106,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1752602.871974663,
+      "y": -1038603.108577443,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1770602.871974662,
+      "y": -1038603.108577443,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1788590.37901852,
+      "y": -1038603.108577443,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1806140.37901852,
+      "y": -1038603.108577443,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1725820.435651901,
+      "y": -1039881.138508636,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700/400X600)",
+      "x": 1716328.768928697,
+      "y": -1040098.255303875,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(230X600)",
+      "x": 1719046.136031407,
+      "y": -1038655.224110482,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743562.953813492,
+      "y": -996823.5023673472,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1743562.953813492,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1752758.578144141,
+      "y": -996823.5023673472,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1752758.578144141,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1761954.202474789,
+      "y": -996823.5023673472,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1761954.202474789,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1770705.25463678,
+      "y": -996823.5023673472,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1770705.25463678,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779526.50240435,
+      "y": -996823.5023673472,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1779526.50240435,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1788581.735523844,
+      "y": -996623.5023670156,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1788581.735523844,
+      "y": -994113.1474932923,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1741321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "900 x 600",
+      "x": 1655255.18921753,
+      "y": -982363.2793321223,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1741321.64778672,
+      "y": -1012267.988110215,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1735019.908813495,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1743579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1741321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1735019.908813495,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1743579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1750321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1750321.64778672,
+      "y": -1012249.792243723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1752579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1750321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1752579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1759321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1759321.64778672,
+      "y": -1012249.792243723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1759321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1768321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1768321.64778672,
+      "y": -1012249.792243723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1770579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1768321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1770579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1777321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1777321.64778672,
+      "y": -1012249.792243723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1779579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1777321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1779579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1786321.64778672,
+      "y": -1028243.423997265,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1786321.64778672,
+      "y": -1012249.792243723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1788579.654764009,
+      "y": -1003725.418093656,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1786321.64778672,
+      "y": -1001015.957990244,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1788579.654764009,
+      "y": -1024423.83616287,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1735019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1805610.056352145,
+      "y": -1032065.035629683,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1808163.516768972,
+      "y": -1032072.745125452,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1811624.851055971,
+      "y": -1036321.336506982,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(230X600)",
+      "x": 1812365.736236553,
+      "y": -1027783.591762499,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1824196.114294226,
+      "y": -1034901.435648263,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1824184.441682071,
+      "y": -1029794.744737328,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1805858.461720248,
+      "y": -1037277.828609613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1818498.002572575,
+      "y": -1030643.84208937,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1818861.798124149,
+      "y": -1040615.433104033,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805543.895988403,
+      "y": -1026581.05471836,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805543.895988403,
+      "y": -1024785.217627794,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805446.085731337,
+      "y": -1029173.506914033,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1812559.158038638,
+      "y": -1037300.759450723,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1812336.63577061,
+      "y": -1030061.666931537,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300x600)",
+      "x": 1818994.895679173,
+      "y": -1036388.46352936,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2370X3000",
+      "x": 1805222.436192686,
+      "y": -1030613.205676523,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2370X3000",
+      "x": 1807762.709397034,
+      "y": -1030610.247607615,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2300X3000",
+      "x": 1810570.301164861,
+      "y": -1030773.195491262,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT-OUT 300X750",
+      "x": 1815068.241569611,
+      "y": -1027289.15520023,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2270X775",
+      "x": 1812865.742094146,
+      "y": -1033721.155020034,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1500X300",
+      "x": 1808718.414586131,
+      "y": -1033792.048482166,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1550x750",
+      "x": 1815178.202377915,
+      "y": -1029340.747699971,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT-OUT 900X600",
+      "x": 1810233.448441489,
+      "y": -1026969.463908431,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 780X5350",
+      "x": 1815780.470912393,
+      "y": -1032708.275904125,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 530X2370",
+      "x": 1818265.404548198,
+      "y": -1029850.281541235,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1813047.884905215,
+      "y": -1039733.509177867,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1802231.336181902,
+      "y": -1038180.107270235,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1824196.114294226,
+      "y": -1038923.636884681,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1818663.05152241,
+      "y": -1025025.966242885,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1812277.029594375,
+      "y": -1025025.966242885,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1803132.160560703,
+      "y": -1029011.714079338,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1805610.056352145,
+      "y": -996173.15673222,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1808163.516768972,
+      "y": -996165.4472364509,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(450X600)",
+      "x": 1811624.851055971,
+      "y": -991916.8558549209,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "(230X600)",
+      "x": 1812365.736236553,
+      "y": -1000225.405510726,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1824196.114294226,
+      "y": -993336.7567136402,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1824184.441682071,
+      "y": -999188.1270243021,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1805858.461720248,
+      "y": -989397.539741376,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1818498.002572575,
+      "y": -996031.526261619,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1818861.798124149,
+      "y": -986059.9352469554,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805543.895988403,
+      "y": -1000094.313632629,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805543.895988403,
+      "y": -1001967.838433613,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1805446.085731337,
+      "y": -997501.861436956,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1812559.158038638,
+      "y": -989374.6089002661,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1812336.63577061,
+      "y": -996613.7014194519,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300x600)",
+      "x": 1818994.895679173,
+      "y": -990332.1675926205,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2370X3000",
+      "x": 1805222.436192686,
+      "y": -995791.0166990226,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2370X3000",
+      "x": 1807762.709397034,
+      "y": -995793.9747679305,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2300X3000",
+      "x": 1810570.301164861,
+      "y": -995631.0268842834,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT-OUT 300X750",
+      "x": 1815068.241569611,
+      "y": -999050.8203595044,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 2270X775",
+      "x": 1812865.742094146,
+      "y": -992683.0673555114,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1500X300",
+      "x": 1808718.414586131,
+      "y": -992612.1738933796,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 1550x750",
+      "x": 1815178.202377915,
+      "y": -997063.4746755745,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT-OUT 900X600",
+      "x": 1810233.448441489,
+      "y": -999434.7584671146,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 780X5350",
+      "x": 1815780.470912393,
+      "y": -993695.9464714206,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 530X2370",
+      "x": 1818265.404548198,
+      "y": -996553.9408343104,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1813047.884905215,
+      "y": -986941.859173122,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1802236.73201503,
+      "y": -991087.4450531371,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1824196.114294226,
+      "y": -989314.5554772214,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1818663.05152241,
+      "y": -1001649.402108103,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(900X600)",
+      "x": 1812277.029594375,
+      "y": -1001649.402108103,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(230X600)",
+      "x": 1803132.160560703,
+      "y": -999971.1576822919,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1803802.606407985,
+      "y": -1022302.163590488,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1803843.842861865,
+      "y": -1014821.324605587,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1803802.606407985,
+      "y": -1005870.503423238,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1824270.407387788,
+      "y": -1022008.948467993,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1824219.216136608,
+      "y": -1014412.152863322,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1824219.216136608,
+      "y": -1005861.957925743,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(400X600)",
+      "x": 1759911.642264486,
+      "y": -982755.7884701221,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1759192.987799399,
+      "y": -985748.7012980039,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1766699.108972599,
+      "y": -984440.3628461956,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1768410.980655582,
+      "y": -985663.646561974,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1756852.011323887,
+      "y": -984119.1844646786,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1761670.842419367,
+      "y": -1038603.002050913,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(400X600)",
+      "x": 1760014.546785512,
+      "y": -1044124.380767876,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1759233.221777295,
+      "y": -1041990.865610694,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1766746.048613479,
+      "y": -1043791.209404931,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1768727.608776258,
+      "y": -1042309.35374082,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1757050.926958047,
+      "y": -1042525.511697879,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1800272.617630263,
+      "y": -1029190.924280352,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797609.619686751,
+      "y": -1035501.477618379,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797746.152002098,
+      "y": -1020567.990920453,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1800272.617630263,
+      "y": -998604.1019726616,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797590.844928664,
+      "y": -991173.8900045299,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797746.152002098,
+      "y": -1006160.238141569,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797746.152002098,
+      "y": -1008967.598335128,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 300X600",
+      "x": 1762059.335418119,
+      "y": -997262.9939308756,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 300X600",
+      "x": 1793651.558132382,
+      "y": -1016204.435710146,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "CUT OUT 300X600",
+      "x": 1762059.335418119,
+      "y": -1028971.570950694,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 750X600",
+      "x": 1732732.703369542,
+      "y": -971324.4940014583,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 300X600",
+      "x": 1728474.825029681,
+      "y": -971357.0745941089,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 900X600",
+      "x": 1733218.690783663,
+      "y": -1057331.70943219,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1730101.17621256,
+      "y": -1057170.269314815,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 450X600",
+      "x": 1775443.951045892,
+      "y": -970697.1011038357,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1730060.120771533,
+      "y": -971230.6961449222,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1803394.697611387,
+      "y": -972702.7565409713,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 450X600",
+      "x": 1770298.984137118,
+      "y": -970697.1011038357,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1716342.088185586,
+      "y": -1064785.615976199,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1710736.761140487,
+      "y": -1065383.327429308,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1718847.043704077,
+      "y": -1064797.115976199,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 600X600",
+      "x": 1802323.640174908,
+      "y": -1052490.120515545,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 600X600",
+      "x": 1797682.075264743,
+      "y": -1052346.655073868,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 600X600",
+      "x": 1795234.734570164,
+      "y": -1052376.493987952,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 450X600",
+      "x": 1791630.999416565,
+      "y": -1052342.971486621,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 300X600",
+      "x": 1797969.530910921,
+      "y": -972510.5500002671,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 300X600",
+      "x": 1821267.109118845,
+      "y": -1051875.541065484,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 300X600",
+      "x": 1816963.566066094,
+      "y": -1051875.541065484,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 230X600",
+      "x": 1815799.990892101,
+      "y": -1051944.6507333,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 450X600",
+      "x": 1820467.522933915,
+      "y": -1057915.546122534,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 600X600",
+      "x": 1817483.95584149,
+      "y": -1057915.546122534,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 600X600",
+      "x": 1814642.439012052,
+      "y": -1057931.054139306,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 900X600",
+      "x": 1811213.673436714,
+      "y": -1057915.546122534,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1704778.665929642,
+      "y": -1024343.660695639,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(300X600)",
+      "x": 1708750.562103013,
+      "y": -998103.134194207,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1727438.632006481,
+      "y": -1003751.684717395,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(300X600)",
+      "x": 1708900.362350416,
+      "y": -1027716.656587199,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1750198.419531381,
+      "y": -990392.1826948662,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1744019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1753019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1762019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1771019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1780019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1789019.908813495,
+      "y": -1014074.627128393,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797652.434340664,
+      "y": -1012722.870438742,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(600X600)",
+      "x": 1797652.434340664,
+      "y": -1017707.093827444,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1759196.663004442,
+      "y": -990392.1826948662,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1768196.663004442,
+      "y": -990392.1826948662,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1777196.663004442,
+      "y": -990392.1826948662,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1786196.663004442,
+      "y": -990392.1826948662,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1741197.541267912,
+      "y": -1035028.949295664,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1750198.419531381,
+      "y": -1034915.792368186,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1759198.419531381,
+      "y": -1034915.792368186,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1768198.419531381,
+      "y": -1034915.792368186,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1777198.419531381,
+      "y": -1034915.792368186,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(750X600)",
+      "x": 1786198.419531381,
+      "y": -1034915.792368186,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1716093.862810584,
+      "y": -989132.0735703752,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "B(230X600)",
+      "x": 1721193.46834229,
+      "y": -989132.0735703752,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(700X600)",
+      "x": 1872697.318022035,
+      "y": -987816.2313988868,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1879635.215529094,
+      "y": -987771.7513796808,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(450X600)",
+      "x": 1866469.927425218,
+      "y": -987771.7513796808,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(400X600)",
+      "x": 1866475.494107313,
+      "y": -986193.5722318513,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "BEAM(400X600)",
+      "x": 1881023.081973699,
+      "y": -986189.5857811207,
+      "reason": "No paired stitched beam faces found."
+    },
+    {
+      "text": "Beam 400X600",
+      "x": 1707749.152748846,
+      "y": -1065167.433868213,
+      "reason": "No paired stitched beam faces found."
+    }
+  ],
+  "sourceMarks": 408
+}

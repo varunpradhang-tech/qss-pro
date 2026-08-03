@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QSS Pro</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css?v=cutout-deduction-20260626" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace">
+        <header class="topbar">
+          <div class="brand top-brand">
+            <span class="brand-mark">QSS</span>
+            <div>
+            <p class="eyebrow">Rule-based takeoff MVP</p>
+              <h1>QSS Pro</h1>
+              <p>Quantity Surveying Software</p>
+            </div>
+          </div>
+          <div>
+            <h2 id="page-title">Extract quantities</h2>
+          </div>
+          <div class="topbar-actions">
+            <label class="plan-control">
+              Plan
+              <select id="user-plan">
+                <option value="free">Free</option>
+                <option value="premium">Premium</option>
+              </select>
+            </label>
+            <button class="ghost-button" id="load-sample" type="button">Load sample</button>
+            <button class="primary-button" id="export-csv" type="button">Export Excel CSV</button>
+          </div>
+        </header>
+
+        <nav class="app-nav" aria-label="QSS Pro pages">
+          <button class="nav-button is-active" type="button" data-page="quantity">Extract</button>
+          <button class="nav-button" type="button" data-page="history">History</button>
+          <button class="nav-button" type="button" data-page="profile">Profile</button>
+          <button class="nav-button" type="button" data-page="settings">Settings</button>
+          <button class="nav-button" type="button" data-page="terms">Terms</button>
+        </nav>
+
+        <section class="utility-panel" id="setup" hidden>
+          <div class="legacy-hidden-controls">
+            <select id="drawing-format">
+              <option value="pdf">PDF from AutoCAD</option>
+              <option value="dxf">DXF AutoCAD drawing</option>
+              <option value="dwg">DWG/BAK AutoCAD drawing</option>
+              <option value="image">Image / scanned sheet</option>
+            </select>
+            <input id="drawing-file" type="file" accept=".pdf,.dxf,.dwg,.bak,.png,.jpg,.jpeg" />
+            <span id="file-name">No file selected</span>
+            <span id="viewer-status"></span>
+            <button id="read-grid" type="button">Read grid dimensions</button>
+            <button id="clear-preview" type="button">Clear</button>
+            <div id="drawing-preview">
+              <svg id="measure-overlay" aria-hidden="true"></svg>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel app-section is-visible" id="quantity">
+          <div class="section-heading">
+            <h3>Extract Quantities</h3>
+            <p>Upload the required drawings for the selected work item. QSS Pro detects file format from each uploaded file.</p>
+          </div>
+
+          <div class="requirement-box compact-requirement">
+            <strong>Mandatory drawing requirement before upload</strong>
+            <div class="check-grid">
+              <label class="check-label">
+                <input id="grid-lines-confirm" type="checkbox" checked />
+                Grid lines are shown on the drawing
+              </label>
+              <label class="check-label">
+                <input id="x-grid-confirm" type="checkbox" checked />
+                X-axis grid-to-grid distances are dimensioned
+              </label>
+              <label class="check-label">
+                <input id="y-grid-confirm" type="checkbox" checked />
+                Y-axis grid-to-grid distances are dimensioned
+              </label>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <label>
+              Drawing type
+              <select id="drawing-type">
+                <option value="structural">Structural drawing</option>
+                <option value="architectural">Architectural drawing</option>
+              </select>
+            </label>
+
+            <label>
+              Project / block name
+              <input id="project-name" type="text" value="Block A" />
+            </label>
+
+            <label>
+              Work group
+              <select id="work-group"></select>
+            </label>
+
+            <label>
+              Quantity rule
+              <select id="quantity-rule"></select>
+            </label>
+
+            <label id="beam-cap-mode-label" hidden>
+              Column caps in beam quantity
+              <select id="beam-cap-mode">
+                <option value="included">Included in beam quantity</option>
+                <option value="excluded">Excluded with deduction row</option>
+              </select>
+            </label>
+
+            <label id="calculation-area-label" hidden>
+              Calculation area
+              <select id="calculation-area-mode">
+                <option value="drawing">As per uploaded drawing</option>
+                <option value="grid">Specific grid area</option>
+              </select>
+            </label>
+
+            <label id="member-filter-label" hidden>
+              Specific member number
+              <input id="member-filter" type="text" placeholder="Example: B64 or C1" />
+            </label>
+
+            <label id="member-occurrence-label" hidden>
+              Member selection
+              <select id="member-occurrence">
+                <option value="all">All matching members</option>
+              </select>
+            </label>
+
+            <label>
+              Output type
+              <select id="output-type">
+                <option value="total">Total quantity only</option>
+                <option value="member" data-premium="true">Member-wise quantity - Premium</option>
+                <option value="floor" data-premium="true">Floor-wise quantity - Premium</option>
+                <option value="room" data-premium="true">Room-wise quantity - Premium</option>
+              </select>
+            </label>
+
+            <label>
+              Floor / level
+              <input id="default-floor" type="text" value="Ground floor" />
+            </label>
+
+            <label>
+              Deduction mode
+              <select id="deduction-mode">
+                <option value="manual">Manual opening deduction</option>
+                <option value="none">No deduction</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="form-grid grid-area-panel" id="grid-area-panel" hidden>
+            <label>
+              X grid from
+              <input id="grid-x-from" type="text" placeholder="E/NT" />
+            </label>
+            <label>
+              X grid to
+              <input id="grid-x-to" type="text" placeholder="F/NT" />
+            </label>
+            <label>
+              Y grid from
+              <input id="grid-y-from" type="text" placeholder="01/T" />
+            </label>
+            <label>
+              Y grid to
+              <input id="grid-y-to" type="text" placeholder="02/T" />
+            </label>
+          </div>
+
+        <section class="panel utility-panel" id="calibration" hidden>
+          <div class="reader-status" id="reader-status">
+            <strong>Waiting for drawing upload</strong>
+            <span>After upload, click Read grid dimensions to extract marked X and Y grid distances.</span>
+          </div>
+          <strong id="scale-output">Not read</strong>
+          <strong id="scale-y-output">Not read</strong>
+          <strong id="measure-output">Pending upload</strong>
+        </section>
+
+          <div class="form-grid column-height-panel" id="column-height-panel" hidden>
+            <label>
+              Column layout method
+              <select id="column-layout-method">
+                <option value="foundation_plus_details">Foundation layout + floor-wise column details</option>
+                <option value="floor_wise_layout">Separate column layout for every floor</option>
+              </select>
+            </label>
+
+            <label>
+              Column height source
+              <select id="column-height-source">
+                <option value="auto">Automatically read from drawings</option>
+                <option value="manual">Enter height manually</option>
+              </select>
+            </label>
+
+            <label>
+              Manual column height
+              <input id="manual-column-height" type="number" min="0" step="0.001" value="3.2" />
+            </label>
+
+            <label>
+              Height unit
+              <select id="manual-column-height-unit">
+                <option value="m">metre</option>
+                <option value="mm">millimetre</option>
+              </select>
+            </label>
+
+            <label>
+              Required drawings
+              <input id="column-height-note" type="text" value="Foundation column layout + lower/upper framing plans + all column schedule sheets" readonly />
+            </label>
+          </div>
+
+          <div class="form-grid column-height-panel" id="column-drawing-set-panel" hidden>
+            <label class="file-input">
+              Foundation column layout
+              <input id="foundation-column-layout-file" type="file" accept=".pdf,.dxf,.dwg,.bak,.png,.jpg,.jpeg" />
+              <span id="foundation-column-layout-name">No file selected</span>
+            </label>
+
+            <label class="file-input">
+              Column schedule sheets
+              <input id="column-schedule-files" type="file" accept=".pdf,.dxf,.dwg,.bak,.png,.jpg,.jpeg" multiple />
+              <span id="column-schedule-file-count">No files selected</span>
+            </label>
+
+            <label class="file-input">
+              Lower framing plan
+              <input id="lower-framing-file" type="file" accept=".pdf,.dxf,.dwg,.bak,.png,.jpg,.jpeg" />
+              <span id="lower-framing-name">No file selected</span>
+            </label>
+
+            <label class="file-input">
+              Upper framing plan
+              <input id="upper-framing-file" type="file" accept=".pdf,.dxf,.dwg,.bak,.png,.jpg,.jpeg" />
+              <span id="upper-framing-name">No file selected</span>
+            </label>
+          </div>
+
+          <div class="column-batch-panel" id="column-batch-panel" hidden>
+            <strong>Column schedules selected</strong>
+            <span>Click Extract Quantity when all required drawings are uploaded.</span>
+            <ol id="column-schedule-list"></ol>
+            <div class="batch-actions" hidden>
+              <button class="primary-button small-button" id="read-column-schedules" type="button">Read column schedules</button>
+            </div>
+            <div class="reader-status column-reader-status" id="column-reader-status" hidden>
+              <strong>Waiting for extraction</strong>
+              <span>Upload all required drawings, then click Extract Quantity.</span>
+            </div>
+          </div>
+
+          <div class="column-batch-panel" id="framing-drawing-panel" hidden>
+            <strong>Framing plan</strong>
+            <span>Upload marked DWG/BAK, PDF, or DXF framing plan. Marked CAD dimensions are used as the main measurement source.</span>
+            <label class="file-input">
+              Framing plan file
+              <input id="framing-plan-files" type="file" accept=".dxf,.dwg,.bak,.pdf" multiple />
+              <span id="framing-plan-file-count">No files selected</span>
+            </label>
+          </div>
+
+          <div class="readiness-panel" id="readiness-panel" hidden>
+            <div>
+              <strong>Ready check</strong>
+              <span id="readiness-summary">Upload drawings and read schedules.</span>
+            </div>
+            <div class="readiness-list" id="readiness-list"></div>
+          </div>
+
+          <div class="extract-panel">
+            <button class="primary-button extract-button" id="extract-quantity" type="button" disabled>Extract Quantity</button>
+            <div class="extract-status-wrap">
+              <span id="extract-status">Upload required drawings to unlock extraction.</span>
+              <a class="inline-download-link is-disabled" id="quick-reference-download" href="#" aria-disabled="true" hidden>Download review reference drawing</a>
+            </div>
+          </div>
+
+          <div class="table-actions" id="table-actions">
+            <button class="primary-button" id="add-row" type="button">Add member</button>
+            <button class="ghost-button" id="duplicate-row" type="button">Duplicate selected</button>
+            <button class="danger-button" id="delete-row" type="button">Delete selected</button>
+          </div>
+
+          <div class="premium-message compact-upgrade" id="detail-upgrade-message">
+            <strong>Premium unlocks member-wise takeoff</strong>
+            <span>Free users see total quantity only. Premium users can download the MB Excel sheet and reference working drawing.</span>
+          </div>
+
+          <div class="table-wrap" id="member-table-wrap">
+            <table id="member-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Member / room</th>
+                  <th>Floor</th>
+                  <th>Length</th>
+                  <th>Breadth / thickness</th>
+                  <th>Height / depth</th>
+                  <th>Cap height</th>
+                  <th>Cap exposed perimeter</th>
+                  <th>Slab thickness</th>
+                  <th>Bottom joint deduction</th>
+                  <th>Side joint deduction</th>
+                  <th>Dia.</th>
+                  <th>Spacing</th>
+                  <th>Nos.</th>
+                  <th>Openings</th>
+                  <th>Quantity</th>
+                </tr>
+              </thead>
+              <tbody id="member-body"></tbody>
+            </table>
+          </div>
+
+          <div class="inline-results" id="results">
+          <div class="section-heading">
+            <h3>Quantity Result</h3>
+            <p>The result changes instantly when the item, output type, or member dimensions are edited.</p>
+          </div>
+
+          <div id="review-list" hidden></div>
+
+          <div class="result-grid">
+            <div class="result-card">
+              <span class="metric-label">Selected item</span>
+              <strong id="result-item">Column concrete</strong>
+            </div>
+            <div class="result-card">
+              <span class="metric-label">Total quantity</span>
+              <strong id="result-total">0.000 m3</strong>
+            </div>
+            <div class="result-card">
+              <span class="metric-label">Rows counted</span>
+              <strong id="result-count">0</strong>
+            </div>
+          </div>
+
+          <div class="reader-status standard-status">
+            <strong>IS code mode of measurement</strong>
+            <span id="standard-note">Quantities will follow IS 1200 mode of measurement and reinforcement detailing/BBS basis.</span>
+          </div>
+
+          <div class="accuracy-audit" id="accuracy-audit" hidden></div>
+
+          <div class="premium-message" id="premium-message" hidden>
+            <strong>Premium required for detailed quantity sheet</strong>
+            <span>Free users can read total quantity only. Premium users can download the MB Excel sheet and reference working drawing.</span>
+          </div>
+
+          <div class="download-panel" id="premium-download-panel" hidden>
+            <div>
+              <strong>Premium downloads</strong>
+              <span id="premium-download-status">Extract quantity to generate current Excel and reference drawing.</span>
+            </div>
+            <div class="download-actions">
+              <a class="primary-button download-button is-disabled" id="download-excel" aria-disabled="true">Download Excel MB sheet</a>
+              <a class="ghost-button download-button is-disabled" id="download-reference-dwg" aria-disabled="true">Download reference drawing</a>
+            </div>
+            <p>Downloads are generated only after extraction and are tied to the currently uploaded drawing set.</p>
+          </div>
+
+          <div class="summary-output" id="summary-output"></div>
+          </div>
+        </section>
+
+        <section class="panel app-section" id="history">
+          <div class="section-heading">
+            <h3>History</h3>
+            <p>Saved quantity takeoffs. Free plan keeps history for 7 days.</p>
+          </div>
+
+          <div class="history-actions">
+            <button class="primary-button" id="save-current-project" type="button">Save Current Takeoff</button>
+            <span id="history-status">No saved takeoffs yet.</span>
+          </div>
+
+          <div class="history-list" id="history-list"></div>
+        </section>
+
+        <section class="panel app-section" id="profile">
+          <div class="section-heading">
+            <h3>Profile</h3>
+            <p>Login, plan status, and premium access.</p>
+          </div>
+
+          <div class="profile-grid">
+            <div class="profile-card">
+              <strong>Login with email OTP</strong>
+              <label>
+                User name
+                <input id="user-name" type="text" placeholder="Your name" />
+              </label>
+              <label>
+                Email ID
+                <input id="login-email" type="email" placeholder="name@example.com" />
+              </label>
+              <div class="inline-actions">
+                <button class="primary-button" id="send-otp" type="button">Send OTP</button>
+                <span id="otp-status">Not logged in</span>
+              </div>
+              <label>
+                OTP
+                <input id="login-otp" type="text" inputmode="numeric" placeholder="Enter OTP" />
+              </label>
+              <button class="ghost-button" id="verify-otp" type="button">Verify login</button>
+            </div>
+
+            <div class="profile-card">
+              <strong>Account ID</strong>
+              <div class="account-lines">
+                <div>
+                  <span>Name</span>
+                  <strong id="profile-user-name">Guest user</strong>
+                </div>
+                <div>
+                  <span>Email</span>
+                  <strong id="profile-user-email">Not logged in</strong>
+                </div>
+                <div>
+                  <span>User ID</span>
+                  <strong id="profile-user-id">Not generated</strong>
+                </div>
+              </div>
+              <p>User ID helps restore premium plan and history when the same user changes device.</p>
+            </div>
+
+            <div class="profile-card">
+              <strong>Plan details</strong>
+              <div class="plan-summary">
+                <span>Current plan</span>
+                <strong id="profile-plan-name">Free</strong>
+              </div>
+              <p>Free users can extract total quantity. Premium users can view member-wise takeoff, download Excel MB sheets/reference drawings, and keep project data for more than one week.</p>
+              <button class="primary-button" id="buy-premium" type="button">Buy Premium Plan</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel app-section" id="settings">
+          <div class="section-heading">
+            <h3>Settings</h3>
+            <p>Language, theme, unit display, and data saving preference.</p>
+          </div>
+
+          <div class="form-grid settings-grid">
+            <label>
+              Language
+              <select id="setting-language">
+                <option value="english">English</option>
+                <option value="hindi">Hindi</option>
+                <option value="marathi">Marathi</option>
+                <option value="bhojpuri">Bhojpuri</option>
+                <option value="punjabi">Punjabi</option>
+                <option value="bengali">Bengali</option>
+                <option value="odia">Odia</option>
+                <option value="tamil">Tamil</option>
+                <option value="telugu">Telugu</option>
+                <option value="kannada">Kannada</option>
+                <option value="spanish">Spanish</option>
+                <option value="german">German</option>
+                <option value="chinese">Chinese</option>
+                <option value="garhwali">Garhwali</option>
+              </select>
+            </label>
+
+            <label>
+              Theme
+              <select id="setting-theme">
+                <option value="system">Default as device</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+
+            <label>
+              Area unit
+              <select id="setting-area-unit">
+                <option value="sqm">sqm</option>
+                <option value="sqft">sqft</option>
+              </select>
+            </label>
+
+            <label>
+              Running length unit
+              <select id="setting-length-unit">
+                <option value="rmt">rmt</option>
+                <option value="rft">rft</option>
+              </select>
+            </label>
+
+            <label>
+              Volume unit
+              <select id="setting-volume-unit">
+                <option value="cum">cum</option>
+                <option value="cft">cft</option>
+              </select>
+            </label>
+
+            <label>
+              Steel unit
+              <select id="setting-weight-unit">
+                <option value="kg">kg</option>
+                <option value="mt">mt</option>
+              </select>
+            </label>
+
+            <label>
+              Save data
+              <select id="setting-save-data">
+                <option value="7days">Keep for 7 days</option>
+                <option value="premium">Keep more than 1 week - Premium</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="premium-message" id="save-data-premium-message" hidden>
+            <strong>Premium required</strong>
+            <span>Saving project data for more than one week is available in Premium plan.</span>
+          </div>
+        </section>
+
+        <section class="panel app-section" id="terms">
+          <div class="section-heading">
+            <h3>Terms & Conditions</h3>
+            <p>Basic terms for using QSS Pro quantity results.</p>
+          </div>
+          <div class="terms-list">
+            <p>QSS Pro calculates quantities from uploaded drawings and selected measurement rules. Users must verify drawings, dimensions, revisions, and final billing quantities before submission.</p>
+            <p>Quantities are intended to follow applicable IS code mode of measurement, but project contract conditions and consultant notes must take priority where applicable.</p>
+            <p>Free plan provides total quantity only. Premium plan provides detailed member-wise quantity sheets, Excel/reference drawing downloads, and extended data saving options.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js?v=marked-reference-readback-20260702"></script>
+  </body>
+</html>

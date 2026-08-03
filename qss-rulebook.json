@@ -1,0 +1,369 @@
+{
+  "rulebookVersion": "QSS-RULEBOOK-2026-07-25-001",
+  "appRuleVersion": "qss-pro-accuracy-2026-07-28-leakproof-rulebook-v95",
+  "purpose": "Permanent coded rule registry for QSS Pro drawing reading, quantity calculation, reference drawing output, and golden-test traceability.",
+  "rules": [
+    {
+      "id": "QSS-PROC-001",
+      "title": "Rule change contract",
+      "appliesTo": "all",
+      "status": "process",
+      "summary": "A drawing-reading rule is not considered fixed until it is written here, implemented in code, and covered by at least one golden test.",
+      "acceptance": [
+        "Every new rule has a stable QSS rule ID.",
+        "Every golden test lists the ruleIds it protects.",
+        "Every app rule audit item maps back to one canonical rule ID."
+      ],
+      "source": "User requirement: chat rules must become permanent app rules."
+    },
+    {
+      "id": "QSS-CAD-001",
+      "codeId": "dwg_pdf_dxf_route",
+      "title": "Input route must be reported",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "Every extraction must report whether the measured source came from DWG, BAK, PDF, DXF, or converted DXF.",
+      "acceptance": [
+        "The API summary includes source format and selected route.",
+        "A missing route fails the rule audit."
+      ],
+      "source": "App route/audit rule."
+    },
+    {
+      "id": "QSS-CAD-002",
+      "codeId": "section_detail_exclusion",
+      "title": "Section and detail drawings are not measured as plan geometry",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "If a CAD file contains framing plan, slab profile, beam details, and sections in one drawing, only the framing plan is measured for shuttering/concrete geometry. Detail/profile/section areas are linked references for size, slab thickness, steel, and validation.",
+      "acceptance": [
+        "Section/detail blocks are excluded from plan quantity rows.",
+        "Beam labels inside sections must not create beam quantity rows.",
+        "Linked detail drawings may only confirm size, thickness, steel, or notes."
+      ],
+      "source": "User corrections about section details being wrongly measured."
+    },
+    {
+      "id": "QSS-CAD-003",
+      "title": "Primary framing region must be selected before measurement",
+      "appliesTo": "all",
+      "status": "documented-pending-full-code",
+      "summary": "When multiple drawings exist in one CAD file, QSS Pro must classify the framing plan region first, then calculate quantities only from that region.",
+      "acceptance": [
+        "Plan region has grid/framing/slab-panel evidence.",
+        "Slab profile and beam detail regions are excluded from geometry measurement.",
+        "Reference drawing marks are placed only on the measured framing plan."
+      ],
+      "source": "User rule: framing plan is primary; other drawings are references."
+    },
+    {
+      "id": "QSS-CAD-004",
+      "codeId": "cad_dimension_validation",
+      "title": "CAD dimension authority and validation",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "Real CAD dimension entities or endpoint-aligned dimension text override geometry when they align with the measured span. If CAD dimension and geometry conflict without a support/offset explanation, the row is review.",
+      "acceptance": [
+        "Authoritative CAD dimensions are used in quantity math, not only remarks.",
+        "Unrelated notes, scale text, section text, and detail text cannot override geometry.",
+        "Dimension conflicts appear in MB remarks and rule audit."
+      ],
+      "source": "cad-reading-rules.md CAD Dimension Authority Rule."
+    },
+    {
+      "id": "QSS-BEAM-001",
+      "codeId": "named_beams_keep_original_ids",
+      "title": "Existing beam names are preserved",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "When the drawing already has beam IDs such as B1, T2B1, XB41, or similar, QSS Pro must use those IDs and must not replace them with QB/BR names.",
+      "acceptance": [
+        "No QB/BR generated beam IDs appear in final beam rows when source beam names exist.",
+        "Reference drawing does not add generated beam names over already named beams."
+      ],
+      "source": "User repeated correction: do not mark named beams as QB/BR."
+    },
+    {
+      "id": "QSS-BEAM-002",
+      "codeId": "unnumbered_beams_marked_only_when_needed",
+      "title": "Generated beam IDs only for unnumbered beams",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "QB or AUTO-BEAM marks are allowed only when a beam has no member name and needs a temporary location-based ID.",
+      "acceptance": [
+        "Unnamed beams get grid/location names.",
+        "Named beams never get duplicate generated names."
+      ],
+      "source": "User rule for unnumbered beam drawings."
+    },
+    {
+      "id": "QSS-BEAM-003",
+      "codeId": "continuous_named_beam_run",
+      "title": "Same named beam continues through spans",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "If one beam name continues through multiple slab panels, columns, walls, or beam intersections, it is one physical beam unless a different beam name, different size, or proven hard stop splits it.",
+      "acceptance": [
+        "Do not create separate final members for every slab-panel span of the same continuous beam.",
+        "For caps excluded, support widths are deducted from bottom and relevant side length.",
+        "Same-name repeated text is merged only when it belongs to the same physical run."
+      ],
+      "source": "Golden tests B1, B2, B15, B64 and user corrections."
+    },
+    {
+      "id": "QSS-BEAM-004",
+      "title": "Sub-beams are separate beams",
+      "appliesTo": "beam",
+      "status": "documented-pending-full-code",
+      "summary": "Beam IDs such as B1A, B1B, B31A, and B31B are separate members from B1 or B31 and must not merge into the parent beam.",
+      "acceptance": [
+        "Exact beam ID matching is used.",
+        "Parent and suffix beam IDs are kept separate in MB output."
+      ],
+      "source": "User rule for B1/B1A/B1B and similar names."
+    },
+    {
+      "id": "QSS-BEAM-005",
+      "codeId": "beam_parallel_face_pairing",
+      "title": "Beam requires paired parallel faces plus label or size evidence",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "A beam row must be based on two parallel beam faces whose face spacing matches the written beam width and whose run is supported by beam name or size evidence.",
+      "acceptance": [
+        "One beam face alone cannot produce final quantity.",
+        "Face-to-face width must match beam size within tolerance.",
+        "False grid, hatch, dimension, and section lines are rejected."
+      ],
+      "source": "cad-reading-rules.md Beam Face Pairing rule."
+    },
+    {
+      "id": "QSS-BEAM-006",
+      "codeId": "beam_unmarked_bay_pattern",
+      "title": "Unmarked beam runs follow grid/bay route",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "Where beam names are absent and only BEAM(size) is written, QSS Pro must build beam runs bay-wise from support to support and name them by grid location.",
+      "acceptance": [
+        "Unnumbered beams are not randomly stitched across the whole floor.",
+        "Size changes at a support start a new beam run.",
+        "Generated name includes location and size."
+      ],
+      "source": "User rule for drawings with BEAM(300x600) but no B1/B2 IDs."
+    },
+    {
+      "id": "QSS-BEAM-007",
+      "codeId": "beam_dotted_continuous_side_logic",
+      "title": "Dotted side deducts slab thickness; continuous side is full depth",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "A dotted/hidden beam face indicates slab exists on that side and slab thickness is deducted from side shuttering height. A continuous outer face has no slab deduction and uses full beam depth.",
+      "acceptance": [
+        "Both dotted faces: both sides deduct adjacent slab thickness.",
+        "One dotted and one continuous face: one side deducts, one side full depth.",
+        "Both continuous faces: both sides full depth."
+      ],
+      "source": "User elevation beam rule after B35/B35A tests."
+    },
+    {
+      "id": "QSS-BEAM-008",
+      "codeId": "beam_panel_by_panel_side_thickness",
+      "title": "Beam sides use adjacent slab thickness panel by panel",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "Beam side shuttering must read slab thickness from each adjacent slab panel. If different sides or segments have different slab thickness, MB output must split side rows or clearly mark average deduction in remarks.",
+      "acceptance": [
+        "Different slab thicknesses on two sides are not silently averaged without remark.",
+        "Side shuttering segments carry slab-thickness evidence.",
+        "Direct slab-panel thickness overrides UNO note."
+      ],
+      "source": "User rule for B6C/B31A/T2B1 mixed slab panels."
+    },
+    {
+      "id": "QSS-BEAM-009",
+      "codeId": "support_face_hard_stop_logic",
+      "title": "Support face stop and continuation logic",
+      "appliesTo": "beam",
+      "status": "coded-audited",
+      "summary": "Wall, column, or support faces stop a beam only when the beam does not continue beyond the support. If it continues with same name/size and paired faces, it remains the same beam and support width is deducted where required.",
+      "acceptance": [
+        "Do not overrun a stopped beam through a wall/column.",
+        "Do not break a continuing beam only because one face is interrupted by support.",
+        "Column/wall widths are deducted from bottom for caps-excluded quantities."
+      ],
+      "source": "User support-face corrections across B4A, B64, B2, B3, B11."
+    },
+    {
+      "id": "QSS-BEAM-010",
+      "title": "Column cap mode affects beam concrete and shuttering",
+      "appliesTo": "beam",
+      "status": "documented-pending-full-code",
+      "summary": "Column cap included/excluded mode must affect beam concrete and beam shuttering. Caps excluded deduct cap/support areas; caps included keeps through quantity and exposes cap-side rows where needed.",
+      "acceptance": [
+        "Column cap dropdown is available for concrete and shuttering.",
+        "Caps excluded deducts wall/column support portions.",
+        "Caps included adds exposed column-cap side faces where applicable."
+      ],
+      "source": "User correction: column cap mode needed for beam shuttering too."
+    },
+    {
+      "id": "QSS-BEAM-011",
+      "title": "Beam MB output order",
+      "appliesTo": "beam",
+      "status": "documented-pending-full-code",
+      "summary": "Beam Excel output must list beams in natural order: horizontal beams from top-left to top-right, then lower rows, then vertical beams in the same disciplined order.",
+      "acceptance": [
+        "B1, B2, B3 sequence is not random.",
+        "Repeated physical beams are grouped under one member with number of members where appropriate."
+      ],
+      "source": "User requirement for Excel order."
+    },
+    {
+      "id": "QSS-SLAB-001",
+      "codeId": "slab_panel_boundary_closure",
+      "title": "Slab panel is a closed structural cell",
+      "appliesTo": "slab",
+      "status": "coded-audited",
+      "summary": "A slab panel is the area bounded by beam faces, wall faces, column/support faces, and cutout/open-to-sky boundaries. Support-only rectangles and structural body strips are not slab panels.",
+      "acceptance": [
+        "Every accepted slab row maps to one closed P-panel face.",
+        "Overlapping panels are not counted.",
+        "False small closed panels are locked as review."
+      ],
+      "source": "User panel marking/cell closure rules."
+    },
+    {
+      "id": "QSS-SLAB-002",
+      "codeId": "slab_reference_polylines",
+      "title": "Reference drawing has closed P-panel polylines",
+      "appliesTo": "slab",
+      "status": "coded-audited",
+      "summary": "Premium reference drawing must contain one closed polyline for each accepted slab panel, with P1/P2 labels placed inside the panel.",
+      "acceptance": [
+        "P-panel marks and quantity rows have one-to-one read-back.",
+        "Panel labels do not sit on beam/wall lines.",
+        "Panel text size is scaled to drawing text and stays inside the panel."
+      ],
+      "source": "User rule for downloadable reference working drawing."
+    },
+    {
+      "id": "QSS-SLAB-003",
+      "codeId": "slab_thickness_priority",
+      "title": "Slab thickness priority",
+      "appliesTo": "slab",
+      "status": "coded-audited",
+      "summary": "Slab thickness is chosen in this order: direct thickness written in the slab panel, slab mark table such as S1/S2/S3, linked slab profile/detail drawing, then UNO/default note.",
+      "acceptance": [
+        "Direct panel thickness overrides UNO notes.",
+        "S-table values resolve slab marks.",
+        "Missing thickness is review unless a default note allows it."
+      ],
+      "source": "User slab thickness corrections."
+    },
+    {
+      "id": "QSS-SLAB-004",
+      "codeId": "cutout_open_to_sky_deduction",
+      "title": "Cutout/open-to-sky deduction",
+      "appliesTo": "slab",
+      "status": "coded-audited",
+      "summary": "X-marked voids, lift shafts, cutouts, open-to-sky, OTS, shaft, and similar areas are not slab and must be deducted automatically as per measurement rules.",
+      "acceptance": [
+        "X/cutout areas are not created as slab panels.",
+        "Cutout area is deducted from slab shuttering and slab concrete.",
+        "Unclear cutout boundary marks the panel review."
+      ],
+      "source": "User cutout/open-to-sky rule."
+    },
+    {
+      "id": "QSS-SLAB-005",
+      "title": "P-panel numbering order",
+      "appliesTo": "slab",
+      "status": "documented-pending-full-code",
+      "summary": "P panels must be numbered in a predictable top-left to top-right, row-by-row order within the measured framing region.",
+      "acceptance": [
+        "P1, P2, P3 order follows drawing position.",
+        "Numbering is not based on random detector order."
+      ],
+      "source": "User correction about random P marking."
+    },
+    {
+      "id": "QSS-SLAB-006",
+      "title": "Repeated dimension between parallel beams",
+      "appliesTo": "slab",
+      "status": "documented-pending-full-code",
+      "summary": "If several slab panels lie between the same two verified parallel beams/supports, they share the same clear distance in that direction unless another beam/wall/support splits the bay.",
+      "acceptance": [
+        "Panels between the same parallel beam pair use the same width/breadth.",
+        "The rule works horizontally and vertically.",
+        "Intermediate supports split the bay and restart the rule."
+      ],
+      "source": "User repeated parallel beam slab dimension rule."
+    },
+    {
+      "id": "QSS-SLAB-007",
+      "title": "Measure slab panels through panel center",
+      "appliesTo": "slab",
+      "status": "documented-pending-full-code",
+      "summary": "Slab dimensions and reference dimension lines must be measured and placed through the panel center where possible so beam lines and offsets do not distort panel size.",
+      "acceptance": [
+        "Measurement lines do not overlap beam dotted lines.",
+        "Center measurement is compared with boundary/face geometry.",
+        "The selected dimension is the evidence with strongest agreement."
+      ],
+      "source": "User correction for P28/P31 panel dimension errors."
+    },
+    {
+      "id": "QSS-SLAB-008",
+      "title": "Minor support offsets handled intentionally",
+      "appliesTo": "slab",
+      "status": "documented-pending-full-code",
+      "summary": "Wall/column offsets inside an otherwise rectangular panel are ignored only when the drawing intent is a rectangular slab bay; true voids/cutouts are deducted.",
+      "acceptance": [
+        "Offset handling is stated in remarks/evidence.",
+        "Support offsets do not create false extra slab panels.",
+        "Cutouts remain deducted."
+      ],
+      "source": "User rule about ignoring column/wall offsets where panel is rectangular."
+    },
+    {
+      "id": "QSS-QA-001",
+      "codeId": "review_gate",
+      "title": "Final quantity review gate",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "Final quantity is locked when review ratio, panel coverage, evidence, or golden tests fail. Review quantity can be shown only as review, never as final billing quantity.",
+      "acceptance": [
+        "Review ratio above limit locks final quantity.",
+        "Low P-panel coverage locks slab quantity.",
+        "The reason is shown to the user."
+      ],
+      "source": "User requirement to avoid wrong totals."
+    },
+    {
+      "id": "QSS-QA-002",
+      "codeId": "mb_excel_remarks",
+      "title": "MB Excel remarks show only need review for user output",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "Premium MB Excel rows must keep the Remarks column blank for clean rows and write only need review when the row needs checking.",
+      "acceptance": [
+        "Every row uses MB columns A-I format.",
+        "Review rows say need review.",
+        "Clean rows have a blank Remarks cell."
+      ],
+      "source": "User MB book format requirement."
+    },
+    {
+      "id": "QSS-QA-003",
+      "title": "Golden tests protect fixed rules",
+      "appliesTo": "all",
+      "status": "process",
+      "summary": "Every verified beam, slab, cutout, support, or thickness example becomes a golden test with expected values and ruleIds.",
+      "acceptance": [
+        "A fixed issue cannot regress without golden-test failure.",
+        "Each golden test lists ruleIds.",
+        "validate-qss-product.ps1 checks rulebook traceability."
+      ],
+      "source": "User requirement to stop chat-to-code leakage."
+    }
+  ]
+}

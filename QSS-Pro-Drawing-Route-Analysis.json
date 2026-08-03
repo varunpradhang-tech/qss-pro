@@ -1,0 +1,50 @@
+{
+  "route": {
+    "route": "grid_unnumbered_beam_route",
+    "label": "Grid-wise unnumbered beam route",
+    "reason": "Beam sizes are available but beam numbers are missing, so calculate by E/H grid bands."
+  },
+  "health": {
+    "gridAxes": {
+      "E": 22,
+      "H": 22,
+      "complete": true
+    },
+    "beamLabels": 0,
+    "beamSizeTexts": 327,
+    "slabMarks": 0,
+    "verifiedBoundaries": 1086,
+    "beamFaces": 879,
+    "supportFaces": 163,
+    "supportBoxes": 122,
+    "cutoutTexts": 68,
+    "cutoutBoundaryVoids": 37,
+    "cutoutDiagonalEvidence": 78
+  },
+  "gates": {
+    "gridRegistry": true,
+    "boundaryGraphInput": true,
+    "cutoutMap": true
+  },
+  "requiredActions": [
+    "Build unnumbered beam runs by grid band and beam size.",
+    "Use default slab thickness or read slab thickness from notes/schedule.",
+    "Create reference working drawing with panel IDs and review markers before premium MB output."
+  ],
+  "sampleEvidence": {
+    "beamLabels": [],
+    "beamSizes": [
+      "BEAM(300X600)",
+      "B(230X600)",
+      "BEAM(300X600)",
+      "B(230X600)",
+      "B(230X600)",
+      "BEAM(230X600)",
+      "BEAM(230X600)",
+      "BEAM(230X600)",
+      "BEAM(230X600)",
+      "B(300X600)"
+    ],
+    "slabMarks": []
+  }
+}

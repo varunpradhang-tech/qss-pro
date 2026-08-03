@@ -1,0 +1,405 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="976" viewBox="0 0 1800 976">
+  <rect width="100%" height="100%" fill="#f8fafc"/>
+  <text x="24" y="34" font-family="Arial" font-size="22" font-weight="700" fill="#0f172a">QSS Pro - T2 slab panel audit overlay</text>
+  <text x="24" y="58" font-family="Arial" font-size="14" fill="#475569">Panel labels are placed at slab mark/text evidence. Red/dashed panels are boundary conflicts and must not be used for quantity.</text>
+  <g transform="translate(0 76) scale(1 0.9118852459016393)">
+    <g>
+      <rect x="376.94" y="790.73" width="161.92" height="124.87" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="455.26" cy="849.92" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="455.26" y="854.92" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P1</text>
+      <text x="477.26" y="844.92" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P1 S19</text>
+      <text x="477.26" y="861.92" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.765 x 2.905 m = 10.937 sqm</text>
+    </g>
+
+    <g>
+      <rect x="571.54" y="790.73" width="108.8" height="124.87" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="633.86" cy="864.79" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="633.86" y="869.79" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P2</text>
+      <text x="655.86" y="859.79" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P2 S20</text>
+      <text x="655.86" y="876.79" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.53 x 2.905 m = 7.35 sqm</text>
+    </g>
+
+    <g>
+      <rect x="179.55" y="694.23" width="167.29" height="221.38" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="260.53" cy="851.94" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="260.53" y="856.94" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P3</text>
+      <text x="282.53" y="846.94" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P3 S18</text>
+      <text x="282.53" y="863.94" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.89 x 5.15 m = 20.034 sqm</text>
+    </g>
+
+    <g>
+      <rect x="879.03" y="778.05" width="104.93" height="137.56" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="905.87" cy="839.35" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="905.87" y="844.35" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P4</text>
+      <text x="927.87" y="834.35" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P4 S21</text>
+      <text x="927.87" y="851.35" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.44 x 3.2 m = 7.807 sqm</text>
+    </g>
+
+    <g>
+      <rect x="680.35" y="859.94" width="153.75" height="72.95" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="770.23" cy="911.99" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="770.23" y="916.99" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P5</text>
+      <text x="792.23" y="906.99" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P5 S14</text>
+      <text x="792.23" y="923.99" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.575 x 1.697 m = 6.068 sqm</text>
+    </g>
+
+    <g>
+      <rect x="710.45" y="659.41" width="123.64" height="200.53" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="770.36" cy="740.44" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="770.36" y="745.44" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P6</text>
+      <text x="792.36" y="735.44" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P6 S17</text>
+      <text x="792.36" y="752.44" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.875 x 4.665 m = 13.412 sqm</text>
+    </g>
+
+    <g>
+      <rect x="613.69" y="659.41" width="96.76" height="121.01" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="646.93" cy="713.83" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="646.93" y="718.83" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P7</text>
+      <text x="668.93" y="708.83" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P7 S16</text>
+      <text x="668.93" y="725.83" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.25 x 2.815 m = 6.334 sqm</text>
+    </g>
+
+    <g>
+      <rect x="357.16" y="737.21" width="246.21" height="53.52" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="501.79" cy="765.02" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="501.79" y="770.02" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P8</text>
+      <text x="523.79" y="760.02" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P8 S13</text>
+      <text x="523.79" y="777.02" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 5.725 x 1.245 m = 7.128 sqm</text>
+    </g>
+
+    <g>
+      <rect x="430.27" y="646.51" width="183.42" height="77.8" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="443.56" cy="697.71" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="443.56" y="702.71" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P9</text>
+      <text x="465.56" y="692.71" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P9 S14</text>
+      <text x="465.56" y="709.71" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.265 x 1.81 m = 7.72 sqm</text>
+    </g>
+
+    <g>
+      <rect x="283.84" y="540.34" width="270.12" height="106.18" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="382.02" cy="599.57" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="382.02" y="604.57" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P10</text>
+      <text x="404.02" y="594.57" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P10 S15</text>
+      <text x="404.02" y="611.57" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 6.281 x 2.47 m = 15.512 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1072.35" y="859.94" width="153.75" height="73.08" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1114.32" cy="910.66" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1114.32" y="915.66" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P11</text>
+      <text x="1136.32" y="905.66" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P11 S14</text>
+      <text x="1136.32" y="922.66" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.575 x 1.7 m = 6.077 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1072.35" y="659.41" width="123.64" height="200.53" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1128.21" cy="743.4" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1128.21" y="748.4" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P12</text>
+      <text x="1150.21" y="738.4" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P12 S17</text>
+      <text x="1150.21" y="755.4" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.875 x 4.665 m = 13.412 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1226.09" y="790.73" width="108.8" height="124.87" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1263.68" cy="863.68" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1263.68" y="868.68" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P13</text>
+      <text x="1285.68" y="858.68" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P13 S20</text>
+      <text x="1285.68" y="875.68" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.53 x 2.905 m = 7.35 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1206.31" y="659.41" width="86.44" height="131.32" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1239.42" cy="717.18" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1239.42" y="722.18" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P14</text>
+      <text x="1261.42" y="712.18" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P14 S16</text>
+      <text x="1261.42" y="729.18" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.01 x 3.055 m = 6.141 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1367.58" y="790.73" width="161.92" height="124.87" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1434.37" cy="856.24" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1434.37" y="861.24" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P15</text>
+      <text x="1456.37" y="851.24" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P15 S19</text>
+      <text x="1456.37" y="868.24" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.765 x 2.905 m = 10.937 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1559.6" y="734.63" width="137.19" height="180.97" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1629.05" cy="837.71" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1629.05" y="842.71" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P16</text>
+      <text x="1651.05" y="832.71" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P16 S18</text>
+      <text x="1651.05" y="849.71" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.19 x 4.21 m = 13.43 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1303.07" y="737.21" width="246.21" height="53.52" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1407.36" cy="767.99" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1407.36" y="772.99" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P17</text>
+      <text x="1429.36" y="762.99" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P17 S14</text>
+      <text x="1429.36" y="779.99" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 5.725 x 1.245 m = 7.128 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1292.75" y="646.51" width="183.42" height="77.8" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1407.36" cy="700.24" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1407.36" y="705.24" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P18</text>
+      <text x="1429.36" y="695.24" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P18 S14</text>
+      <text x="1429.36" y="712.24" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.265 x 1.81 m = 7.72 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1696.79" y="724.36" width="60.21" height="191.25" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1726.68" cy="785.18" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1726.68" y="790.18" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P56</text>
+      <text x="1748.68" y="780.18" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P56 S22</text>
+      <text x="1748.68" y="797.18" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.605 x 0.465 m = 2.141 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1476.17" y="656.83" width="157.62" height="77.8" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1608.67" cy="684.12" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1608.67" y="689.12" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P20</text>
+      <text x="1630.67" y="679.12" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P20 S22</text>
+      <text x="1630.67" y="696.12" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 3.665 x 1.81 m = 6.634 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1058.33" y="416.97" width="205.39" height="229.55" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1076.13" cy="468.29" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1076.13" y="473.29" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P21</text>
+      <text x="1098.13" y="463.29" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P21 S11A</text>
+      <text x="1098.13" y="480.29" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.776 x 5.34 m = 25.501 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1363.71" y="429.86" width="270.08" height="97.66" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1469.33" cy="484.97" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1469.33" y="489.97" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P22</text>
+      <text x="1491.33" y="479.97" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P22 S15</text>
+      <text x="1491.33" y="496.97" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 6.28 x 2.272 m = 14.265 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1363.71" y="540.42" width="270.08" height="106.09" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1476.86" cy="602.88" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1476.86" y="607.88" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P23</text>
+      <text x="1498.86" y="597.88" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P23 S15</text>
+      <text x="1498.86" y="614.88" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 6.28 x 2.468 m = 15.502 sqm</text>
+    </g>
+
+    <g>
+      
+      <circle cx="1466.88" cy="393.02" r="16" fill="#ffffff" stroke="#b91c1c" stroke-width="3"/>
+      <text x="1466.88" y="398.02" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#b91c1c">P24</text>
+      <text x="1488.88" y="388.02" font-family="Arial" font-size="13" font-weight="700" fill="#b91c1c">P24 S14</text>
+      <text x="1488.88" y="405.02" font-family="Arial" font-size="11" fill="#334155">Boundary conflict | 4.995 x 1.425 m = 7.118 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1523.26" y="173.02" width="93.32" height="182.69" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1545.79" cy="254.95" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1545.79" y="259.95" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P25</text>
+      <text x="1567.79" y="249.95" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P25 S8</text>
+      <text x="1567.79" y="266.95" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.17 x 4.25 m = 9.223 sqm</text>
+    </g>
+
+    <g>
+      
+      <circle cx="1423.1" cy="332.07" r="16" fill="#ffffff" stroke="#b91c1c" stroke-width="3"/>
+      <text x="1423.1" y="337.07" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#b91c1c">P26</text>
+      <text x="1445.1" y="327.07" font-family="Arial" font-size="13" font-weight="700" fill="#b91c1c">P26 S13</text>
+      <text x="1445.1" y="344.07" font-family="Arial" font-size="11" fill="#334155">Boundary conflict | 3.11 x 1.29 m = 4.012 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1363.71" y="173.02" width="128.59" height="127.24" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1417.85" cy="230.53" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1417.85" y="235.53" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P27</text>
+      <text x="1439.85" y="225.53" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P27 S9</text>
+      <text x="1439.85" y="242.53" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.99 x 2.96 m = 8.85 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1363.71" y="42.99" width="261.47" height="114.99" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1493.58" cy="99.94" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1493.58" y="104.94" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P28</text>
+      <text x="1515.58" y="94.94" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P28 S1</text>
+      <text x="1515.58" y="111.94" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 6.08 x 2.675 m = 16.263 sqm</text>
+    </g>
+
+    <g>
+      <rect x="1151.26" y="42.99" width="199.55" height="373.98" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1226.22" cy="352.27" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1226.22" y="357.27" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P29</text>
+      <text x="1248.22" y="347.27" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P29 S10</text>
+      <text x="1248.22" y="364.27" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.64 x 8.7 m = 40.367 sqm</text>
+    </g>
+
+    <g>
+      <rect x="949.13" y="79.95" width="199.46" height="275.11" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1096.3" cy="115.37" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1096.3" y="120.37" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P30</text>
+      <text x="1118.3" y="110.37" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P30 S5</text>
+      <text x="1118.3" y="127.37" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.638 x 6.4 m = 29.681 sqm</text>
+    </g>
+
+    <g>
+      <rect x="766.36" y="92.85" width="172.45" height="174.52" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="878.39" cy="175.04" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="878.39" y="180.04" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P31</text>
+      <text x="900.39" y="170.04" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P31 S4</text>
+      <text x="900.39" y="187.04" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.01 x 4.06 m = 16.281 sqm</text>
+    </g>
+
+    <g>
+      <rect x="766.36" y="277.69" width="172.45" height="77.38" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="870.35" cy="318.7" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="870.35" y="323.7" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P32</text>
+      <text x="892.35" y="313.7" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P32 S11</text>
+      <text x="892.35" y="330.7" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.01 x 1.8 m = 7.217 sqm</text>
+    </g>
+
+    <g>
+      <rect x="799.04" y="355.07" width="317.38" height="61.9" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="926.43" cy="391.82" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="926.43" y="396.82" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P33</text>
+      <text x="948.43" y="386.82" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P33 S11</text>
+      <text x="948.43" y="403.82" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 7.38 x 1.44 m = 10.627 sqm</text>
+    </g>
+
+    <g>
+      <rect x="970.64" y="429.86" width="77.41" height="216.65" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="1001.86" cy="530.1" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="1001.86" y="535.1" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P34</text>
+      <text x="1023.86" y="525.1" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P34 S11</text>
+      <text x="1023.86" y="542.1" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 1.8 x 5.04 m = 9.072 sqm</text>
+    </g>
+
+    <g>
+      <rect x="653.9" y="429.86" width="306.85" height="216.65" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="719.83" cy="595.74" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="719.83" y="600.74" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P35</text>
+      <text x="741.83" y="590.74" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P35 S15</text>
+      <text x="741.83" y="607.74" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 7.135 x 5.04 m = 35.96 sqm</text>
+    </g>
+
+    <g>
+      <rect x="283.84" y="429.86" width="270.12" height="97.58" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="424.51" cy="487.42" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="424.51" y="492.42" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P36</text>
+      <text x="446.51" y="482.42" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P36 S15</text>
+      <text x="446.51" y="499.42" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 6.281 x 2.27 m = 14.259 sqm</text>
+    </g>
+
+    <g>
+      
+      <circle cx="358.15" cy="396.72" r="16" fill="#ffffff" stroke="#b91c1c" stroke-width="3"/>
+      <text x="358.15" y="401.72" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#b91c1c">P37</text>
+      <text x="380.15" y="391.72" font-family="Arial" font-size="13" font-weight="700" fill="#b91c1c">P37 S14</text>
+      <text x="380.15" y="408.72" font-family="Arial" font-size="11" fill="#334155">Boundary conflict | 4.995 x 1.425 m = 7.118 sqm</text>
+    </g>
+
+    <g>
+      <rect x="301.04" y="173.02" width="93.32" height="182.69" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="339.19" cy="244.93" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="339.19" y="249.93" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P38</text>
+      <text x="361.19" y="239.93" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P38 S8</text>
+      <text x="361.19" y="256.93" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.17 x 4.25 m = 9.223 sqm</text>
+    </g>
+
+    <g>
+      
+      <circle cx="465.54" cy="334.82" r="16" fill="#ffffff" stroke="#b91c1c" stroke-width="3"/>
+      <text x="465.54" y="339.82" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#b91c1c">P39</text>
+      <text x="487.54" y="329.82" font-family="Arial" font-size="13" font-weight="700" fill="#b91c1c">P39 S13</text>
+      <text x="487.54" y="346.82" font-family="Arial" font-size="11" fill="#334155">Boundary conflict | 3.79 x 1.59 m = 6.026 sqm</text>
+    </g>
+
+    <g>
+      <rect x="425.33" y="173.02" width="119.99" height="127.24" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="477.58" cy="228.86" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="477.58" y="233.86" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P40</text>
+      <text x="499.58" y="223.86" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P40 S9</text>
+      <text x="499.58" y="240.86" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.79 x 2.96 m = 8.258 sqm</text>
+    </g>
+
+    <g>
+      <rect x="292.44" y="43.03" width="111.38" height="114.94" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="348.6" cy="89.76" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="348.6" y="94.76" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P41</text>
+      <text x="370.6" y="84.76" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P41 S2</text>
+      <text x="370.6" y="101.76" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.59 x 2.674 m = 6.927 sqm</text>
+    </g>
+
+    <g>
+      <rect x="425.33" y="43.03" width="119.99" height="114.94" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="495.47" cy="91.6" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="495.47" y="96.6" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P42</text>
+      <text x="517.47" y="86.6" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P42 S2</text>
+      <text x="517.47" y="103.6" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.79 x 2.674 m = 7.462 sqm</text>
+    </g>
+
+    <g>
+      
+      <circle cx="663.28" cy="321.92" r="16" fill="#ffffff" stroke="#b91c1c" stroke-width="3"/>
+      <text x="663.28" y="326.92" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#b91c1c">P43</text>
+      <text x="685.28" y="316.92" font-family="Arial" font-size="13" font-weight="700" fill="#b91c1c">P43 S10</text>
+      <text x="685.28" y="333.92" font-family="Arial" font-size="11" fill="#334155">Boundary conflict | 4.88 x 8.699 m = 42.453 sqm</text>
+    </g>
+
+    <g>
+      <rect x="80.38" y="540.34" width="190.56" height="158.19" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="165.79" cy="602.06" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="165.79" y="607.06" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P44</text>
+      <text x="187.79" y="597.06" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P44 S18</text>
+      <text x="187.79" y="614.06" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.431 x 3.68 m = 16.304 sqm</text>
+    </g>
+
+    <g>
+      <rect x="80.38" y="429.86" width="190.56" height="97.58" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="170.22" cy="483.68" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="170.22" y="488.68" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P45</text>
+      <text x="192.22" y="478.68" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P45 S15</text>
+      <text x="192.22" y="495.68" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.431 x 2.27 m = 10.058 sqm</text>
+    </g>
+
+    <g>
+      <rect x="89.02" y="43.03" width="181.91" height="114.86" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="178.43" cy="100.54" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="178.43" y="105.54" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P46</text>
+      <text x="200.43" y="95.54" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P46 S1A</text>
+      <text x="200.43" y="112.54" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.23 x 2.672 m = 11.304 sqm</text>
+    </g>
+
+    <g>
+      <rect x="855.81" y="659.41" width="192.24" height="64.48" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="955.11" cy="692.64" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="955.11" y="697.64" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P47</text>
+      <text x="977.11" y="687.64" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P47 S11</text>
+      <text x="977.11" y="704.64" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 4.469 x 1.5 m = 6.704 sqm</text>
+    </g>
+
+    <g>
+      <rect x="834.09" y="723.89" width="238.25" height="54.16" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="954.04" cy="755.87" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="954.04" y="760.87" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P48</text>
+      <text x="976.04" y="750.87" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P48 S11</text>
+      <text x="976.04" y="767.87" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 5.54 x 1.26 m = 6.981 sqm</text>
+    </g>
+
+    <g>
+      <rect x="983.97" y="778.05" width="88.38" height="137.56" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="999.02" cy="791.42" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="999.02" y="796.42" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P49</text>
+      <text x="1021.02" y="786.42" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P49 S11A</text>
+      <text x="1021.02" y="803.42" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 2.055 x 3.2 m = 6.577 sqm</text>
+    </g>
+
+    <g>
+      <rect x="43.01" y="208.83" width="248.44" height="190.69" fill="rgba(20,184,166,0.04)" stroke="#0f766e" stroke-width="2"/>
+      <circle cx="167.21" cy="304.17" r="16" fill="#ffffff" stroke="#0f766e" stroke-width="3"/>
+      <text x="167.21" y="309.17" text-anchor="middle" font-family="Arial" font-size="12" font-weight="700" fill="#0f766e">P9</text>
+      <text x="189.21" y="299.17" font-family="Arial" font-size="13" font-weight="700" fill="#0f766e">P9 S7</text>
+      <text x="189.21" y="316.17" font-family="Arial" font-size="11" fill="#334155">Panel evidence | 5.777 x 4.436 m = 25.627 sqm</text>
+    </g></g>
+</svg>

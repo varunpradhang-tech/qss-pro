@@ -1,0 +1,6 @@
+"S.No.","Panel","Grid Address","Unit","No.","Length","Breadth","Height/Thickness","Total Qty","Remarks"
+"1","P1","","sqm","1","9.524","3.28","1","31.235","Boundary face cell split from P1"
+"2","P2","","sqm","1","8.175","3.28","1","26.811","Boundary face cell split from P1"
+"3","P3","","sqm","1","17.999","4.595","1","82.706","Boundary face cell."
+"4","P4","","sqm","1","0.9","4.595","1","4.135","Boundary face cell."
+"5","P5","","sqm","1","1.15","4.595","1","5.284","Boundary face cell."

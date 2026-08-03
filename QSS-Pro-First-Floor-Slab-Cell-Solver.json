@@ -1,0 +1,1220 @@
+{
+  "ok": true,
+  "grid": {
+    "sourceBlock": "zw$231",
+    "labelCount": 55,
+    "primaryLabelCount": 44,
+    "eAxes": [
+      {
+        "label": "E1",
+        "index": 1,
+        "coordinate": 1706606.4362298327,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 9450
+      },
+      {
+        "label": "E2",
+        "index": 2,
+        "coordinate": 1713605.0206398668,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 13374
+      },
+      {
+        "label": "E3",
+        "index": 3,
+        "coordinate": 1718983.368852488,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 7995
+      },
+      {
+        "label": "E4",
+        "index": 4,
+        "coordinate": 1723944.1518013545,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 3035
+      },
+      {
+        "label": "E5",
+        "index": 5,
+        "coordinate": 1727641.6494599779,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 663
+      },
+      {
+        "label": "E6",
+        "index": 6,
+        "coordinate": 1732354.1518105355,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 1078
+      },
+      {
+        "label": "E7",
+        "index": 7,
+        "coordinate": 1736641.6491512547,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 5365
+      },
+      {
+        "label": "E8",
+        "index": 8,
+        "coordinate": 1745641.6494599779,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 14365
+      },
+      {
+        "label": "E9",
+        "index": 9,
+        "coordinate": 1754687.8940413247,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 18434
+      },
+      {
+        "label": "E10",
+        "index": 10,
+        "coordinate": 1763521.0765653814,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 9600
+      },
+      {
+        "label": "E11",
+        "index": 11,
+        "coordinate": 1772521.0763356078,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 600
+      },
+      {
+        "label": "E12",
+        "index": 12,
+        "coordinate": 1781521.076450494,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 8400
+      },
+      {
+        "label": "E13",
+        "index": 13,
+        "coordinate": 1790533.5693719245,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 17412
+      },
+      {
+        "label": "E14",
+        "index": 14,
+        "coordinate": 1799521.076450494,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 10286
+      },
+      {
+        "label": "E15",
+        "index": 15,
+        "coordinate": 1808021.0811647007,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 1786
+      },
+      {
+        "label": "E16",
+        "index": 16,
+        "coordinate": 1813702.290462185,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 2304
+      },
+      {
+        "label": "E17",
+        "index": 17,
+        "coordinate": 1815306.1344212855,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 701
+      },
+      {
+        "label": "E18",
+        "index": 18,
+        "coordinate": 1817171.076451135,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 380
+      },
+      {
+        "label": "E19",
+        "index": 19,
+        "coordinate": 1820300.3002653539,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 10
+      },
+      {
+        "label": "E20",
+        "index": 20,
+        "coordinate": 1822046.0764157816,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 1736
+      },
+      {
+        "label": "E21",
+        "index": 21,
+        "coordinate": 1824776.676774984,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 4466
+      },
+      {
+        "label": "E22",
+        "index": 22,
+        "coordinate": 1828840.7803940105,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 8531
+      }
+    ],
+    "hAxes": [
+      {
+        "label": "H1",
+        "index": 1,
+        "coordinate": -987466.7175410889,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H2",
+        "index": 2,
+        "coordinate": -989683.9495143747,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 39
+      },
+      {
+        "label": "H3",
+        "index": 3,
+        "coordinate": -991227.1091862923,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 574
+      },
+      {
+        "label": "H4",
+        "index": 4,
+        "coordinate": -992573.3863906224,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 1084
+      },
+      {
+        "label": "H5",
+        "index": 5,
+        "coordinate": -993950.8359163204,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H6",
+        "index": 6,
+        "coordinate": -995328.0959237913,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 289
+      },
+      {
+        "label": "H7",
+        "index": 7,
+        "coordinate": -997180.8359146273,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H8",
+        "index": 8,
+        "coordinate": -998658.2496206869,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H9",
+        "index": 9,
+        "coordinate": -1001045.8603843121,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H10",
+        "index": 10,
+        "coordinate": -1003296.626765072,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H11",
+        "index": 11,
+        "coordinate": -1008595.837031549,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H12",
+        "index": 12,
+        "coordinate": -1010941.4077844048,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H13",
+        "index": 13,
+        "coordinate": -1013496.0174335075,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H14",
+        "index": 14,
+        "coordinate": -1018496.5013459782,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H15",
+        "index": 15,
+        "coordinate": -1023695.0448342861,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H16",
+        "index": 16,
+        "coordinate": -1025647.5755628651,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H17",
+        "index": 17,
+        "coordinate": -1028370.0448342861,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 294
+      },
+      {
+        "label": "H18",
+        "index": 18,
+        "coordinate": -1031306.6931662589,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 260
+      },
+      {
+        "label": "H19",
+        "index": 19,
+        "coordinate": -1033006.6940221671,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 260
+      },
+      {
+        "label": "H20",
+        "index": 20,
+        "coordinate": -1036284.2807161665,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 260
+      },
+      {
+        "label": "H21",
+        "index": 21,
+        "coordinate": -1038030.652370169,
+        "labelPoints": 1,
+        "lineMatched": false,
+        "lineDistanceMm": 1417
+      },
+      {
+        "label": "H22",
+        "index": 22,
+        "coordinate": -1039707.1535710465,
+        "labelPoints": 1,
+        "lineMatched": true,
+        "lineDistanceMm": 260
+      }
+    ],
+    "complete": true,
+    "spacings": {
+      "E": [
+        {
+          "from": "E1",
+          "to": "E2",
+          "distanceMm": 6998.58441003412
+        },
+        {
+          "from": "E2",
+          "to": "E3",
+          "distanceMm": 5378.348212621175
+        },
+        {
+          "from": "E3",
+          "to": "E4",
+          "distanceMm": 4960.782948866487
+        },
+        {
+          "from": "E4",
+          "to": "E5",
+          "distanceMm": 3697.4976586233824
+        },
+        {
+          "from": "E5",
+          "to": "E6",
+          "distanceMm": 4712.5023505575955
+        },
+        {
+          "from": "E6",
+          "to": "E7",
+          "distanceMm": 4287.497340719216
+        },
+        {
+          "from": "E7",
+          "to": "E8",
+          "distanceMm": 9000.000308723189
+        },
+        {
+          "from": "E8",
+          "to": "E9",
+          "distanceMm": 9046.244581346866
+        },
+        {
+          "from": "E9",
+          "to": "E10",
+          "distanceMm": 8833.18252405664
+        },
+        {
+          "from": "E10",
+          "to": "E11",
+          "distanceMm": 8999.999770226423
+        },
+        {
+          "from": "E11",
+          "to": "E12",
+          "distanceMm": 9000.00011488609
+        },
+        {
+          "from": "E12",
+          "to": "E13",
+          "distanceMm": 9012.492921430618
+        },
+        {
+          "from": "E13",
+          "to": "E14",
+          "distanceMm": 8987.507078569382
+        },
+        {
+          "from": "E14",
+          "to": "E15",
+          "distanceMm": 8500.004714206792
+        },
+        {
+          "from": "E15",
+          "to": "E16",
+          "distanceMm": 5681.209297484253
+        },
+        {
+          "from": "E16",
+          "to": "E17",
+          "distanceMm": 1603.8439591005445
+        },
+        {
+          "from": "E17",
+          "to": "E18",
+          "distanceMm": 1864.9420298496261
+        },
+        {
+          "from": "E18",
+          "to": "E19",
+          "distanceMm": 3129.2238142187707
+        },
+        {
+          "from": "E19",
+          "to": "E20",
+          "distanceMm": 1745.7761504277587
+        },
+        {
+          "from": "E20",
+          "to": "E21",
+          "distanceMm": 2730.6003592023626
+        },
+        {
+          "from": "E21",
+          "to": "E22",
+          "distanceMm": 4064.103619026486
+        }
+      ],
+      "H": [
+        {
+          "from": "H1",
+          "to": "H2",
+          "distanceMm": 2217.231973285787
+        },
+        {
+          "from": "H2",
+          "to": "H3",
+          "distanceMm": 1543.1596719175577
+        },
+        {
+          "from": "H3",
+          "to": "H4",
+          "distanceMm": 1346.2772043300793
+        },
+        {
+          "from": "H4",
+          "to": "H5",
+          "distanceMm": 1377.449525698088
+        },
+        {
+          "from": "H5",
+          "to": "H6",
+          "distanceMm": 1377.2600074708462
+        },
+        {
+          "from": "H6",
+          "to": "H7",
+          "distanceMm": 1852.7399908360094
+        },
+        {
+          "from": "H7",
+          "to": "H8",
+          "distanceMm": 1477.4137060595676
+        },
+        {
+          "from": "H8",
+          "to": "H9",
+          "distanceMm": 2387.610763625242
+        },
+        {
+          "from": "H9",
+          "to": "H10",
+          "distanceMm": 2250.7663807598874
+        },
+        {
+          "from": "H10",
+          "to": "H11",
+          "distanceMm": 5299.210266476963
+        },
+        {
+          "from": "H11",
+          "to": "H12",
+          "distanceMm": 2345.570752855856
+        },
+        {
+          "from": "H12",
+          "to": "H13",
+          "distanceMm": 2554.609649102669
+        },
+        {
+          "from": "H13",
+          "to": "H14",
+          "distanceMm": 5000.4839124707505
+        },
+        {
+          "from": "H14",
+          "to": "H15",
+          "distanceMm": 5198.543488307856
+        },
+        {
+          "from": "H15",
+          "to": "H16",
+          "distanceMm": 1952.5307285790332
+        },
+        {
+          "from": "H16",
+          "to": "H17",
+          "distanceMm": 2722.469271420967
+        },
+        {
+          "from": "H17",
+          "to": "H18",
+          "distanceMm": 2936.6483319727704
+        },
+        {
+          "from": "H18",
+          "to": "H19",
+          "distanceMm": 1700.0008559082635
+        },
+        {
+          "from": "H19",
+          "to": "H20",
+          "distanceMm": 3277.5866939993575
+        },
+        {
+          "from": "H20",
+          "to": "H21",
+          "distanceMm": 1746.3716540024616
+        },
+        {
+          "from": "H21",
+          "to": "H22",
+          "distanceMm": 1676.5012008775957
+        }
+      ]
+    }
+  },
+  "boundaryCoordinates": {
+    "x": 36,
+    "y": 21
+  },
+  "stitching": {
+    "used": true,
+    "rawBoundaries": 1080,
+    "stitchedBoundaries": 140,
+    "stitchedJoinedBoundaries": 88
+  },
+  "internalSplit": {
+    "used": true,
+    "splitPanelCount": 1,
+    "beforePanels": 4,
+    "afterPanels": 5
+  },
+  "panels": [
+    {
+      "panel": "P1",
+      "gridBand": "E8-E9/outside H grid",
+      "lengthM": 9.524126457131002,
+      "breadthM": 3.279597857879475,
+      "thicknessM": 0.15,
+      "grossAreaSqm": 31.23530472698007,
+      "cutoutAreaSqm": 0,
+      "netAreaSqm": 31.23530472698007,
+      "concreteCum": 4.68529570904701,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "box": {
+        "minX": 1748904.649707213,
+        "maxX": 1758428.776164344,
+        "minY": -986570.3063511126,
+        "maxY": -983290.7084932331
+      },
+      "remarks": "Boundary face cell split from P1"
+    },
+    {
+      "panel": "P2",
+      "gridBand": "E9-E10/outside H grid",
+      "lengthM": 8.174995279398514,
+      "breadthM": 3.279597857879475,
+      "thicknessM": 0.15,
+      "grossAreaSqm": 26.810697006490187,
+      "cutoutAreaSqm": 0,
+      "netAreaSqm": 26.810697006490187,
+      "concreteCum": 4.021604550973528,
+      "coverage": {
+        "top": 0.9908256827758006,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "box": {
+        "minX": 1758728.776164344,
+        "maxX": 1766903.7714437426,
+        "minY": -986570.3063511126,
+        "maxY": -983290.7084932331
+      },
+      "remarks": "Boundary face cell split from P1"
+    },
+    {
+      "panel": "P3",
+      "gridBand": "E9-E10/H1-H2",
+      "lengthM": 17.999121736529517,
+      "breadthM": 4.595000000000349,
+      "thicknessM": 0.15,
+      "grossAreaSqm": 82.70596437935941,
+      "cutoutAreaSqm": 0,
+      "netAreaSqm": 82.70596437935941,
+      "concreteCum": 12.405894656903913,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "box": {
+        "minX": 1748904.649707213,
+        "maxX": 1766903.7714437426,
+        "minY": -991165.3063511129,
+        "maxY": -986570.3063511126
+      },
+      "remarks": "Boundary face cell."
+    },
+    {
+      "panel": "P4",
+      "gridBand": "E13-E14/H1-H2",
+      "lengthM": 0.8999999999997672,
+      "breadthM": 4.595000000000349,
+      "thicknessM": 0.15,
+      "grossAreaSqm": 4.135499999999245,
+      "cutoutAreaSqm": 0,
+      "netAreaSqm": 4.135499999999245,
+      "concreteCum": 0.6203249999998867,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865070137,
+        "right": 0.7780195865070137
+      },
+      "box": {
+        "minX": 1793966.278487601,
+        "maxX": 1794866.2784876009,
+        "minY": -991165.3063511129,
+        "maxY": -986570.3063511126
+      },
+      "remarks": "Boundary face cell."
+    },
+    {
+      "panel": "P5",
+      "gridBand": "E15-E16/H1-H2",
+      "lengthM": 1.15,
+      "breadthM": 4.595000000000349,
+      "thicknessM": 0.15,
+      "grossAreaSqm": 5.284250000000401,
+      "cutoutAreaSqm": 0,
+      "netAreaSqm": 5.284250000000401,
+      "concreteCum": 0.7926375000000601,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865070137,
+        "right": 0.7780195865070137
+      },
+      "box": {
+        "minX": 1810716.278487601,
+        "maxX": 1811866.278487601,
+        "minY": -991165.3063511129,
+        "maxY": -986570.3063511126
+      },
+      "remarks": "Boundary face cell."
+    }
+  ],
+  "reviewCells": [
+    {
+      "gridBand": "E4-E5/outside H grid",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 3.279597857879475,
+      "grossAreaSqm": 3.1402514814324394,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E5-E6/outside H grid",
+      "lengthM": 3.4500000000009314,
+      "breadthM": 3.279597857879475,
+      "grossAreaSqm": 11.314612609687243,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E7-E8/outside H grid",
+      "lengthM": 17.125878263469087,
+      "breadthM": 3.279597857879475,
+      "grossAreaSqm": 56.16599366717788,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E2-E3/H1-H2",
+      "lengthM": 14.609973011625,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 67.13282598842197,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E4-E5/H1-H2",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 4.3997636852077235,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E5-E6/H1-H2",
+      "lengthM": 3.4500000000009314,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 15.852750000005484,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E5-E6/H1-H2",
+      "lengthM": 0.55,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 2.527250000000192,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 0.7780195865070137
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E7-E8/H1-H2",
+      "lengthM": 17.125878263469087,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 78.69341062064643,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E10-E11/H1-H2",
+      "lengthM": 6.067696147762472,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 27.881063798970676,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E11-E12/H1-H2",
+      "lengthM": 7.807303852237994,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 35.87456120103631,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 0.7780195865070137
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E12-E13/H1-H2",
+      "lengthM": 10.463884397334885,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 48.08154880575745,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865070137,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E13-E14/H1-H2",
+      "lengthM": 2.723622646523174,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 12.515046060774933,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 0.7780195865070137
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E13-E14/H1-H2",
+      "lengthM": 2.9339097603051925,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 13.481315348603383,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865070137,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E14-E15/H1-H2",
+      "lengthM": 3.8,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 17.461000000001324,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0,
+        "right": 0.7780195865071151
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E14-E15/H1-H2",
+      "lengthM": 6.385,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 29.339075000002225,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865071151,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E15-E16/H1-H2",
+      "lengthM": 1.4299946168295574,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 6.570825264332315,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865070137,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E18-E19/H1-H2",
+      "lengthM": 3.213745231281966,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 14.767159337741754,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 0.7780195865068871,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E19-E20/H1-H2",
+      "lengthM": 3.675574182604905,
+      "breadthM": 4.595000000000349,
+      "grossAreaSqm": 16.88926336907082,
+      "coverage": {
+        "top": 0.8367601987494572,
+        "bottom": 0.836760198075019,
+        "left": 0,
+        "right": 0.8215451577799814
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E2-E3/H5-H6",
+      "lengthM": 14.609973011625,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 101.35808743355373,
+      "coverage": {
+        "top": 1,
+        "bottom": 0.5082144911690868,
+        "left": 1,
+        "right": 0.7855746752131512
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E4-E5/H5-H6",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 6.6428252606134865,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0.7855746752131512,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E9-E10/H5-H6",
+      "lengthM": 17.999121736529517,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 124.87063139998378,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E13-E14/H5-H6",
+      "lengthM": 0.8999999999997672,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 6.24383622184587,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E14-E15/H5-H6",
+      "lengthM": 3.8,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 26.362864047800493,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 0.8810827232460811,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E17-E18/H5-H6",
+      "lengthM": 0.56516931318352,
+      "breadthM": 6.937595802052761,
+      "grossAreaSqm": 3.920916254591031,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E2-E3/H10-H11",
+      "lengthM": 14.609973011625,
+      "breadthM": 14.874209034736385,
+      "grossAreaSqm": 217.3117925667673,
+      "coverage": {
+        "top": 0.5082144911690868,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E4-E5/H10-H11",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 14.874209034736385,
+      "grossAreaSqm": 14.242220839437824,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E9-E10/H10-H11",
+      "lengthM": 17.999121736529517,
+      "breadthM": 14.874209034736385,
+      "grossAreaSqm": 267.7226991508074,
+      "coverage": {
+        "top": 0,
+        "bottom": 0.9000439153162068,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E2-E3/H14-H15",
+      "lengthM": 14.609973011625,
+      "breadthM": 15.32420903447771,
+      "grossAreaSqm": 223.88628041821931,
+      "coverage": {
+        "top": 1,
+        "bottom": 0.5082144911690868,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E4-E5/H14-H15",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 15.32420903447771,
+      "grossAreaSqm": 14.673100851887272,
+      "coverage": {
+        "top": 1,
+        "bottom": 0,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E5-E6/H14-H15",
+      "lengthM": 3.4500000000009314,
+      "breadthM": 15.32420903447771,
+      "grossAreaSqm": 52.86852116896237,
+      "coverage": {
+        "top": 0.9333333333332163,
+        "bottom": 0,
+        "left": 0.98042310275625,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E9-E10/H14-H15",
+      "lengthM": 17.999121736529517,
+      "breadthM": 15.32420903447771,
+      "grossAreaSqm": 275.82230392758976,
+      "coverage": {
+        "top": 0.9000439153162068,
+        "bottom": 0,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E2-E3/H18-H19",
+      "lengthM": 14.609973011625,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 99.71446015113098,
+      "coverage": {
+        "top": 0.5082144911690868,
+        "bottom": 1,
+        "left": 1,
+        "right": 0.7985235691508703
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E4-E5/H18-H19",
+      "lengthM": 0.9575111393269617,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 6.535104908866824,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0.7985235691508703,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E9-E10/H18-H19",
+      "lengthM": 17.999121736529517,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 122.84572365222348,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E13-E14/H18-H19",
+      "lengthM": 0.8999999999997672,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 6.142585894209874,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E14-E15/H18-H19",
+      "lengthM": 3.8,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 25.935362664448398,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 0.8956058020711134,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E17-E18/H18-H19",
+      "lengthM": 0.56516931318352,
+      "breadthM": 6.825095438012736,
+      "grossAreaSqm": 3.857334501113634,
+      "coverage": {
+        "top": 0,
+        "bottom": 1,
+        "left": 1,
+        "right": 1
+      },
+      "reason": "One boundary side is weak/missing."
+    },
+    {
+      "gridBand": "E13-E14/outside H grid",
+      "lengthM": 2.723622646523174,
+      "breadthM": 0.45,
+      "grossAreaSqm": 1.2256301909354284,
+      "coverage": {
+        "top": 1,
+        "bottom": 1,
+        "left": 1,
+        "right": 0
+      },
+      "reason": "One boundary side is weak/missing."
+    }
+  ],
+  "totals": {
+    "slabShutteringSqm": 150.17171611282933,
+    "slabConcreteCum": 22.5257574169244,
+    "cutoutDeductionSqm": 0
+  }
+}
