@@ -10,3 +10,5 @@ uploads/
 temp/
 last-*.json
 server-*.log
+*.inspect.ndjson
+QSS-Pro-*
