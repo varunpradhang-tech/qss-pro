@@ -1,0 +1,12 @@
+node_modules/
+*.log
+*.dwg
+*.dxf
+*.bak
+*.xls
+*.xlsx
+*.tmp
+uploads/
+temp/
+last-*.json
+server-*.log
