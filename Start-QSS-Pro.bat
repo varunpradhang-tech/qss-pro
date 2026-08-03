@@ -44,6 +44,17 @@ echo [%date% %time%] QSS Pro launcher started.>> "%ERR_LOG%"
 start "" /min cmd /c "timeout /t 3 >nul & explorer http://127.0.0.1:4175/"
 
 :restart
+set EXISTING_PID=
+for /f "tokens=5" %%P in ('netstat -ano ^| findstr /R /C:":%PORT% .*LISTENING"') do set EXISTING_PID=%%P
+if defined EXISTING_PID (
+  echo.
+  echo QSS Pro is already running on http://127.0.0.1:%PORT%/ using process %EXISTING_PID%.
+  echo Opening the existing app link. Close the other QSS Pro server window before starting a fresh server.
+  start "" "http://127.0.0.1:%PORT%/"
+  echo.
+  pause
+  exit /b 0
+)
 echo.
 echo [%date% %time%] Starting QSS Pro server on http://127.0.0.1:%PORT%/
 echo [%date% %time%] Starting QSS Pro server on http://127.0.0.1:%PORT%/>> "%OUT_LOG%"
