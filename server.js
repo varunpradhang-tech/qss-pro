@@ -45,7 +45,7 @@ let ocrWorkerPromise;
 const framingExtractionCache = new Map();
 const detailScheduleCache = new Map();
 const maxCacheEntries = 16;
-const ACCURACY_RULE_VERSION = "qss-pro-accuracy-2026-07-29-strict-boundary-panels-v115";
+const ACCURACY_RULE_VERSION = "qss-pro-accuracy-2026-08-03-panel-labels-strict-slab-dimensions-v116";
 const CAD_ENGINE_LIMITS = {
   graph: { maxEdges: 35000 },
   walk: { maxFaces: 2500, maxDirectedVisits: 200000 },
@@ -1909,6 +1909,134 @@ function cadDimensionForSpan(dimensions, span, orientation) {
       const bVisible = /visible-dimension-text|text-dimension-label/i.test(String(b.dimension.valueSource || ""));
       if (aVisible !== bVisible) return aVisible ? -1 : 1;
       return (a.endpointDiff + a.valueDiff * 0.15 + a.axisDiff * 0.05) - (b.endpointDiff + b.valueDiff * 0.15 + b.axisDiff * 0.05);
+    });
+  return candidates[0]?.dimension || null;
+}
+
+function dimensionPointNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function dimensionTextPoint(dimension = {}) {
+  const x = dimensionPointNumber(dimension.textX ?? dimension.xText ?? dimension.x);
+  const y = dimensionPointNumber(dimension.textY ?? dimension.yText ?? dimension.y);
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+}
+
+function dimensionSpanRange(dimension = {}, orientation) {
+  const first = orientation === "horizontal"
+    ? dimensionPointNumber(dimension.x1)
+    : dimensionPointNumber(dimension.y1);
+  const second = orientation === "horizontal"
+    ? dimensionPointNumber(dimension.x2)
+    : dimensionPointNumber(dimension.y2);
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+  return {
+    start: Math.min(first, second),
+    end: Math.max(first, second),
+  };
+}
+
+function dimensionSpanAxis(dimension = {}, orientation) {
+  const first = orientation === "horizontal"
+    ? dimensionPointNumber(dimension.y1)
+    : dimensionPointNumber(dimension.x1);
+  const second = orientation === "horizontal"
+    ? dimensionPointNumber(dimension.y2)
+    : dimensionPointNumber(dimension.x2);
+  if (Number.isFinite(first) && Number.isFinite(second)) return (first + second) / 2;
+  const textPoint = dimensionTextPoint(dimension);
+  if (!textPoint) return null;
+  return orientation === "horizontal" ? textPoint.y : textPoint.x;
+}
+
+function rangeOverlapLength(firstStart, firstEnd, secondStart, secondEnd) {
+  return Math.max(0, Math.min(firstEnd, secondEnd) - Math.max(firstStart, secondStart));
+}
+
+function cadDimensionForPanelSpan(dimensions, span, orientation) {
+  if (!span || !Array.isArray(dimensions) || !dimensions.length) return null;
+  const expected = orientation === "horizontal"
+    ? Math.abs(Number(span.x2) - Number(span.x))
+    : Math.abs(Number(span.y2) - Number(span.y));
+  if (!Number.isFinite(expected) || expected <= 0) return null;
+  const start = orientation === "horizontal"
+    ? Math.min(Number(span.x), Number(span.x2))
+    : Math.min(Number(span.y), Number(span.y2));
+  const end = orientation === "horizontal"
+    ? Math.max(Number(span.x), Number(span.x2))
+    : Math.max(Number(span.y), Number(span.y2));
+  const axis = orientation === "horizontal"
+    ? (Number(span.y) + Number(span.y2)) / 2
+    : (Number(span.x) + Number(span.x2)) / 2;
+  if (![start, end, axis].every(Number.isFinite)) return null;
+  const panelLength = Math.max(1, end - start);
+  const axisTolerance = Math.max(90, Math.min(450, panelLength * 0.08));
+  const endpointTolerance = Math.max(60, Math.min(260, panelLength * 0.035));
+  const centerTolerance = Math.max(80, Math.min(420, panelLength * 0.08));
+  const candidates = dimensions
+    .filter((dimension) => dimension.orientation === orientation)
+    .filter((dimension) => Number(dimension.valueMm || 0) >= 250 && Number(dimension.valueMm || 0) <= 60000)
+    .map((dimension) => {
+      const range = dimensionSpanRange(dimension, orientation);
+      const dAxis = dimensionSpanAxis(dimension, orientation);
+      const textPoint = dimensionTextPoint(dimension);
+      const dStart = range?.start;
+      const dEnd = range?.end;
+      const dMid = Number.isFinite(dStart) && Number.isFinite(dEnd) ? (dStart + dEnd) / 2 : null;
+      const dSpan = Number.isFinite(dStart) && Number.isFinite(dEnd) ? dEnd - dStart : 0;
+      const overlap = Number.isFinite(dStart) && Number.isFinite(dEnd)
+        ? rangeOverlapLength(start, end, dStart, dEnd)
+        : 0;
+      const overlapRatio = overlap / Math.min(panelLength, Math.max(1, dSpan || panelLength));
+      const endpointDiff = Number.isFinite(dStart) && Number.isFinite(dEnd)
+        ? Math.abs(dStart - start) + Math.abs(dEnd - end)
+        : Infinity;
+      const axisDiff = Number.isFinite(dAxis) ? Math.abs(dAxis - axis) : Infinity;
+      const centerDiff = Number.isFinite(dMid) ? Math.abs(dMid - (start + end) / 2) : Infinity;
+      const textAlong = textPoint ? (orientation === "horizontal" ? textPoint.x : textPoint.y) : null;
+      const textAxis = textPoint ? (orientation === "horizontal" ? textPoint.y : textPoint.x) : null;
+      const textInsideSpan = Number.isFinite(textAlong) && textAlong >= start - endpointTolerance && textAlong <= end + endpointTolerance;
+      const textAxisDiff = Number.isFinite(textAxis) ? Math.abs(textAxis - axis) : Infinity;
+      const valueDiff = Math.abs(Number(dimension.valueMm || 0) - expected);
+      const markedCadDimension = /visible-dimension-text|text-dimension-label|actual-measurement/i.test(String(dimension.valueSource || ""));
+      const endpointAligned = endpointDiff <= endpointTolerance * 2.2;
+      const spanAligned = overlapRatio >= 0.86 && centerDiff <= centerTolerance;
+      const textAligned = textInsideSpan && textAxisDiff <= axisTolerance;
+      const valueAgrees = valueDiff <= Math.max(40, expected * 0.012);
+      const accepted = markedCadDimension && (
+        (endpointAligned && axisDiff <= axisTolerance * 1.6) ||
+        (spanAligned && axisDiff <= axisTolerance * 1.6) ||
+        (textAligned && valueAgrees) ||
+        (valueAgrees && axisDiff <= axisTolerance && centerDiff <= centerTolerance)
+      );
+      return {
+        dimension,
+        accepted,
+        endpointAligned,
+        spanAligned,
+        textAligned,
+        valueAgrees,
+        endpointDiff,
+        axisDiff,
+        textAxisDiff,
+        centerDiff,
+        valueDiff,
+        overlapRatio,
+        markedCadDimension,
+      };
+    })
+    .filter((item) => item.accepted)
+    .sort((a, b) => {
+      const aVisible = /visible-dimension-text|text-dimension-label/i.test(String(a.dimension.valueSource || ""));
+      const bVisible = /visible-dimension-text|text-dimension-label/i.test(String(b.dimension.valueSource || ""));
+      if (aVisible !== bVisible) return aVisible ? -1 : 1;
+      const aEndpoint = a.endpointAligned ? 0 : 1;
+      const bEndpoint = b.endpointAligned ? 0 : 1;
+      if (aEndpoint !== bEndpoint) return aEndpoint - bEndpoint;
+      return (a.axisDiff + a.centerDiff * 0.8 + a.endpointDiff * 0.4 + a.valueDiff * 0.25)
+        - (b.axisDiff + b.centerDiff * 0.8 + b.endpointDiff * 0.4 + b.valueDiff * 0.25);
     });
   return candidates[0]?.dimension || null;
 }
@@ -6028,8 +6156,8 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
       if (mark && Number.isFinite(mark.x) && Number.isFinite(mark.y)) {
         if (mark.x <= panelBounds.minX || mark.x >= panelBounds.maxX || mark.y <= panelBounds.minY || mark.y >= panelBounds.maxY) return null;
       }
-      const cadLength = cadDimensionForSpan(grid.dimensions, { x: panelBounds.minX, y: (panelBounds.minY + panelBounds.maxY) / 2, x2: panelBounds.maxX, y2: (panelBounds.minY + panelBounds.maxY) / 2 }, "horizontal");
-      const cadBreadth = cadDimensionForSpan(grid.dimensions, { x: (panelBounds.minX + panelBounds.maxX) / 2, y: panelBounds.minY, x2: (panelBounds.minX + panelBounds.maxX) / 2, y2: panelBounds.maxY }, "vertical");
+      const cadLength = cadDimensionForPanelSpan(grid.dimensions, { x: panelBounds.minX, y: (panelBounds.minY + panelBounds.maxY) / 2, x2: panelBounds.maxX, y2: (panelBounds.minY + panelBounds.maxY) / 2 }, "horizontal");
+      const cadBreadth = cadDimensionForPanelSpan(grid.dimensions, { x: (panelBounds.minX + panelBounds.maxX) / 2, y: panelBounds.minY, x2: (panelBounds.minX + panelBounds.maxX) / 2, y2: panelBounds.maxY }, "vertical");
       const lengthChoice = chooseMeasuredDimension({ cadDimension: cadLength, gridDimension: null, geometryMm: geometryLengthMm });
       const breadthChoice = chooseMeasuredDimension({ cadDimension: cadBreadth, gridDimension: null, geometryMm: geometryBreadthMm });
       const lengthM = (lengthChoice.valueMm || geometryLengthMm) / 1000;
@@ -7428,7 +7556,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
     });
   }
   if (areaItem && referenceDrawing?.ok && !referenceDrawing.summary?.reviewOnlyReference && Number(referenceDrawing.panelMarks || 0) > 0) {
-    const directReferencePanelRows = slabRowsFromReferencePanelMarks(referenceDrawing, file.name, role, slabInfo, cutouts);
+    const directReferencePanelRows = slabRowsFromReferencePanelMarks(referenceDrawing, file.name, role, slabInfo, cutouts, grid);
     const directReferenceAcceptedRows = finalQuantityRows(directReferencePanelRows, itemType);
     const directReferenceArea = slabNetTotal(directReferenceAcceptedRows);
     const panelMarkCount = Number(referenceDrawing.panelMarks || 0);
@@ -7521,7 +7649,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
       reviewQuantityFromBlockedSlab = false;
     }
     if (!shouldUseReadback) {
-      const directReferencePanelRows = slabRowsFromReferencePanelMarks(referenceDrawing, file.name, role, slabInfo, cutouts);
+      const directReferencePanelRows = slabRowsFromReferencePanelMarks(referenceDrawing, file.name, role, slabInfo, cutouts, grid);
       const directReferenceAcceptedRows = finalQuantityRows(directReferencePanelRows, itemType);
       const directReferenceArea = slabNetTotal(directReferenceAcceptedRows);
       const panelMarkCount = Number(referenceDrawing.panelMarks || 0);
@@ -7948,7 +8076,7 @@ function takeoffEngineSlabRows(result, fileName, role) {
   });
 }
 
-function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabInfo = {}, cutouts = []) {
+function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabInfo = {}, cutouts = [], grid = { dimensions: [] }) {
   const panels = Array.isArray(referenceDrawing?.panelMarksData) ? referenceDrawing.panelMarksData : [];
   if (!panels.length) return [];
   return panels.map((panel) => {
@@ -7958,8 +8086,36 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
     const minY = Math.min(Number(box.minY), Number(box.maxY));
     const maxY = Math.max(Number(box.minY), Number(box.maxY));
     if (![minX, maxX, minY, maxY].every(Number.isFinite) || maxX <= minX || maxY <= minY) return null;
-    const length = round3((maxX - minX) / 1000);
-    const breadth = round3((maxY - minY) / 1000);
+    const geometryLengthMm = maxX - minX;
+    const geometryBreadthMm = maxY - minY;
+    const panelCenter = {
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+    };
+    const cadLength = cadDimensionForPanelSpan(grid.dimensions, {
+      x: minX,
+      y: panelCenter.y,
+      x2: maxX,
+      y2: panelCenter.y,
+    }, "horizontal");
+    const cadBreadth = cadDimensionForPanelSpan(grid.dimensions, {
+      x: panelCenter.x,
+      y: minY,
+      x2: panelCenter.x,
+      y2: maxY,
+    }, "vertical");
+    const lengthChoice = chooseMeasuredDimension({
+      cadDimension: cadLength,
+      gridDimension: null,
+      geometryMm: geometryLengthMm,
+    });
+    const breadthChoice = chooseMeasuredDimension({
+      cadDimension: cadBreadth,
+      gridDimension: null,
+      geometryMm: geometryBreadthMm,
+    });
+    const length = round3(Number(lengthChoice.valueMm || geometryLengthMm) / 1000);
+    const breadth = round3(Number(breadthChoice.valueMm || geometryBreadthMm) / 1000);
     const grossArea = length * breadth;
     if (length <= 0 || breadth <= 0 || grossArea <= 0) return null;
     const marksInside = (slabInfo.slabMarks || []).filter((mark) =>
@@ -7969,10 +8125,6 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
       mark.x < maxX - 80 &&
       mark.y > minY + 80 &&
       mark.y < maxY - 80);
-    const panelCenter = {
-      x: (minX + maxX) / 2,
-      y: (minY + maxY) / 2,
-    };
     const panelMark = panel.slabMark
       ? { text: panel.slabMark, x: panel.slabMarkX || panelCenter.x, y: panel.slabMarkY || panelCenter.y }
       : marksInside.length
@@ -8028,7 +8180,11 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
     const status = String(panel.status || "");
     const multipleMarks = Number(panel.slabMarksInsideCount || marksInside.length || 0) > 1;
     const weakBoundaryCoverage = coverageValues.length < 4 || weakestCoverage < 0.85;
-    const needsReview = /review/i.test(status) || multipleMarks || weakBoundaryCoverage || cutoutOverlapRatio > 0.02;
+    const dimensionConflict = Boolean(lengthChoice.conflict || breadthChoice.conflict);
+    const needsReview = /review/i.test(status) || multipleMarks || weakBoundaryCoverage || cutoutOverlapRatio > 0.02 || dimensionConflict;
+    const dimensionReview = dimensionConflict
+      ? `Need review: written CAD dimension and panel geometry differ. Length ${round3(Number(lengthChoice.valueMm || 0) / 1000)} m (${lengthChoice.source}), breadth ${round3(Number(breadthChoice.valueMm || 0) / 1000)} m (${breadthChoice.source}).`
+      : "";
     return {
       name: panel.label || panel.id || slabName,
       panelNo: panel.label || panel.id || "",
@@ -8053,6 +8209,8 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
           ? `Cutout/open-to-sky overlap deducted ${round3(Math.min(cutoutAreaM2, grossArea))} sqm; verify this panel before final billing.`
           : weakBoundaryCoverage
           ? `Review needed: P-panel boundary coverage is weak (${Math.round(weakestCoverage * 100)}%). Panel box may not align with beam/wall/column faces.`
+          : dimensionReview
+          ? dimensionReview
           : needsReview
           ? "Reference P-panel box was created, but boundary/slab-mark evidence needs review before final billing."
           : "QSS-SLAB-002: quantity row came from closed P-panel reference drawing box.",
@@ -8075,11 +8233,19 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
         panelRightX: Math.round(maxX),
         panelBottomY: Math.round(minY),
         panelTopY: Math.round(maxY),
-        geometryLengthM: length,
-        geometryBreadthM: breadth,
-        lengthBasis: "reference-panel-box",
-        breadthBasis: "reference-panel-box",
-        dimensionConflict: false,
+        geometryLengthM: round3(geometryLengthMm / 1000),
+        geometryBreadthM: round3(geometryBreadthMm / 1000),
+        cadLengthM: cadLength ? round3(Number(cadLength.valueMm || 0) / 1000) : 0,
+        cadBreadthM: cadBreadth ? round3(Number(cadBreadth.valueMm || 0) / 1000) : 0,
+        measuredLengthM: length,
+        measuredBreadthM: breadth,
+        lengthBasis: lengthChoice.source || "reference-panel-box",
+        breadthBasis: breadthChoice.source || "reference-panel-box",
+        dimensionValues: {
+          length: lengthChoice.values || [],
+          breadth: breadthChoice.values || [],
+        },
+        dimensionConflict,
         slabThicknessSource: slabSpec
           ? `${slabName} schedule/spec -> ${slabSpec.thicknessMm} mm`
           : directThickness
@@ -8264,7 +8430,7 @@ function referenceTextHeightForBox(box, { min = 180, max = 380, fraction = 0.1 }
 }
 
 function referencePanelLabelHeight(panel) {
-  return referenceTextHeightForBox(panel?.box, { min: 170, max: 320, fraction: 0.09 });
+  return referenceTextHeightForBox(panel?.box, { min: 120, max: 220, fraction: 0.055 });
 }
 
 function referenceDimensionTextHeight(box) {
@@ -8721,7 +8887,7 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
         radius: Math.round(panelLabelHeight * 1.2),
         color: 3,
       }));
-      if (!panel.existingReferenceMark) {
+      if (String(panel.label || "").trim()) {
         additions.push(dxfTextEntity({
           handle: nextHandle(),
           owner: ownerHandle,
