@@ -2546,6 +2546,35 @@ function chooseMeasuredDimension({ cadDimension, gridDimension, geometryMm, pref
   return { ...selected, conflict, disagreement, authoritative, values };
 }
 
+function isWrittenPanelDimension(dimension = {}) {
+  return Number(dimension?.valueMm || 0) > 0 &&
+    /visible-dimension-text|text-dimension-label|actual-measurement/i.test(String(dimension?.valueSource || ""));
+}
+
+function chooseSlabPanelDimension({ cadDimension, gridDimension, geometryMm }) {
+  const cadMm = Number(cadDimension?.valueMm || 0);
+  const gridMm = Number(gridDimension?.valueMm || 0);
+  const geometry = Number(geometryMm || 0);
+  const values = [
+    cadMm ? { source: "written-cad-dimension", valueMm: cadMm } : null,
+    gridMm ? { source: "grid-dimension", valueMm: gridMm } : null,
+    geometry ? { source: "geometry", valueMm: geometry } : null,
+  ].filter(Boolean);
+  if (isWrittenPanelDimension(cadDimension)) {
+    const disagreement = values.some((item) => Math.abs(item.valueMm - cadMm) > Math.max(25, cadMm * 0.01));
+    return {
+      source: "written-cad-dimension",
+      valueMm: cadMm,
+      conflict: false,
+      disagreement,
+      authoritative: true,
+      values,
+      writtenDimensionAuthority: true,
+    };
+  }
+  return chooseMeasuredDimension({ cadDimension, gridDimension, geometryMm });
+}
+
 function extractGridPanelRowsFromDxf(fileName, role, gridPanels, grid, slabInfo, cutouts = []) {
   if (!Array.isArray(gridPanels) || !gridPanels.length) return [];
   const rows = [];
@@ -6158,8 +6187,8 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
       }
       const cadLength = cadDimensionForPanelSpan(grid.dimensions, { x: panelBounds.minX, y: (panelBounds.minY + panelBounds.maxY) / 2, x2: panelBounds.maxX, y2: (panelBounds.minY + panelBounds.maxY) / 2 }, "horizontal");
       const cadBreadth = cadDimensionForPanelSpan(grid.dimensions, { x: (panelBounds.minX + panelBounds.maxX) / 2, y: panelBounds.minY, x2: (panelBounds.minX + panelBounds.maxX) / 2, y2: panelBounds.maxY }, "vertical");
-      const lengthChoice = chooseMeasuredDimension({ cadDimension: cadLength, gridDimension: null, geometryMm: geometryLengthMm });
-      const breadthChoice = chooseMeasuredDimension({ cadDimension: cadBreadth, gridDimension: null, geometryMm: geometryBreadthMm });
+      const lengthChoice = chooseSlabPanelDimension({ cadDimension: cadLength, gridDimension: null, geometryMm: geometryLengthMm });
+      const breadthChoice = chooseSlabPanelDimension({ cadDimension: cadBreadth, gridDimension: null, geometryMm: geometryBreadthMm });
       const lengthM = (lengthChoice.valueMm || geometryLengthMm) / 1000;
       const breadthM = (breadthChoice.valueMm || geometryBreadthMm) / 1000;
       const areaM2 = lengthM * breadthM;
@@ -8104,12 +8133,12 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
       x2: panelCenter.x,
       y2: maxY,
     }, "vertical");
-    const lengthChoice = chooseMeasuredDimension({
+    const lengthChoice = chooseSlabPanelDimension({
       cadDimension: cadLength,
       gridDimension: null,
       geometryMm: geometryLengthMm,
     });
-    const breadthChoice = chooseMeasuredDimension({
+    const breadthChoice = chooseSlabPanelDimension({
       cadDimension: cadBreadth,
       gridDimension: null,
       geometryMm: geometryBreadthMm,
