@@ -45,7 +45,9 @@ let ocrWorkerPromise;
 const framingExtractionCache = new Map();
 const detailScheduleCache = new Map();
 const maxCacheEntries = 16;
-const ACCURACY_RULE_VERSION = "qss-pro-accuracy-2026-08-03-panel-labels-strict-slab-dimensions-v116";
+const ACCURACY_RULE_VERSION = "qss-pro-accuracy-2026-08-03-slab-box-generation-removed-v118";
+const STRICT_SLAB_PANEL_READBACK_ONLY = true;
+const SLAB_AUTO_PANEL_CREATION_ENABLED = false;
 const CAD_ENGINE_LIMITS = {
   graph: { maxEdges: 35000 },
   walk: { maxFaces: 2500, maxDirectedVisits: 200000 },
@@ -1735,6 +1737,41 @@ function dimensionEvidenceFromNumericText(item) {
   };
 }
 
+function dimensionEvidenceKey(dimension = {}) {
+  return [
+    dimension.orientation || "",
+    Math.round(Number(dimension.x1 || 0) / 25),
+    Math.round(Number(dimension.y1 || 0) / 25),
+    Math.round(Number(dimension.x2 || 0) / 25),
+    Math.round(Number(dimension.y2 || 0) / 25),
+    Math.round(Number(dimension.valueMm || 0) / 25),
+  ].join(":");
+}
+
+function dimensionEvidenceRank(dimension = {}) {
+  const source = String(dimension.valueSource || "");
+  if (/visible-dimension-text/i.test(source)) return 0;
+  if (/text-dimension-label/i.test(source)) return 1;
+  if (/actual-measurement/i.test(source)) return 2;
+  return 3;
+}
+
+function textDimensionEvidenceFromEntities(entities = []) {
+  return entities
+    .filter((item) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(item.type) && item.text)
+    .map((item) => ({ ...item, text: cleanCadText(item.text || "") }))
+    .map(dimensionEvidenceFromNumericText)
+    .filter(Boolean);
+}
+
+function mergeDimensionEvidence(...dimensionLists) {
+  return uniqueRowsBy(
+    dimensionLists.flat().filter(Boolean),
+    dimensionEvidenceKey,
+    dimensionEvidenceRank,
+  );
+}
+
 function dimensionOrientationFromEndpoints(item, fallbackAngle = 0) {
   const dx = Math.abs(Number(item.x14 ?? item.x2 ?? 0) - Number(item.x13 ?? item.x ?? 0));
   const dy = Math.abs(Number(item.y14 ?? item.y2 ?? 0) - Number(item.y13 ?? item.y ?? 0));
@@ -1814,18 +1851,7 @@ function extractGridEvidence(entities) {
   const textDimensions = allTextEntities
     .map(dimensionEvidenceFromNumericText)
     .filter(Boolean);
-  const dimensions = uniqueRowsBy(
-    trueDimensions.concat(textDimensions),
-    (dimension) => [
-      dimension.orientation,
-      Math.round(Number(dimension.x1 || 0) / 25),
-      Math.round(Number(dimension.y1 || 0) / 25),
-      Math.round(Number(dimension.x2 || 0) / 25),
-      Math.round(Number(dimension.y2 || 0) / 25),
-      Math.round(Number(dimension.valueMm || 0) / 25),
-    ].join(":"),
-    (dimension) => dimension.valueSource === "visible-dimension-text" ? 0 : dimension.valueSource === "text-dimension-label" ? 1 : 2,
-  );
+  const dimensions = mergeDimensionEvidence(trueDimensions, textDimensions);
 
   return {
     axes: uniqueAxes,
@@ -1924,6 +1950,22 @@ function dimensionTextPoint(dimension = {}) {
   return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
 }
 
+function dimensionEvidenceBounds(dimension = {}) {
+  const points = [
+    { x: dimensionPointNumber(dimension.x1), y: dimensionPointNumber(dimension.y1) },
+    { x: dimensionPointNumber(dimension.x2), y: dimensionPointNumber(dimension.y2) },
+    dimensionTextPoint(dimension),
+  ].filter((point) => point && Number.isFinite(point.x) && Number.isFinite(point.y));
+  return boundsFromPoints(points);
+}
+
+function dimensionEvidenceInsideRegion(dimension = {}, region = null, marginMm = 2500) {
+  if (!region) return true;
+  const bounds = dimensionEvidenceBounds(dimension);
+  if (!bounds) return false;
+  return boxesOverlap(bounds, region, marginMm);
+}
+
 function dimensionSpanRange(dimension = {}, orientation) {
   const first = orientation === "horizontal"
     ? dimensionPointNumber(dimension.x1)
@@ -1953,6 +1995,14 @@ function dimensionSpanAxis(dimension = {}, orientation) {
 
 function rangeOverlapLength(firstStart, firstEnd, secondStart, secondEnd) {
   return Math.max(0, Math.min(firstEnd, secondEnd) - Math.max(firstStart, secondStart));
+}
+
+function distanceToRange(value, start, end) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return Infinity;
+  if (number < start) return start - number;
+  if (number > end) return number - end;
+  return 0;
 }
 
 function cadDimensionForPanelSpan(dimensions, span, orientation) {
@@ -6138,30 +6188,20 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
     ].join(":");
   }
 
-  function createSlabRow({ mark, leftX, rightX, bottomY, topY, source }) {
+  function createSlabRow({ mark, leftX, rightX, bottomY, topY, source, writtenLengthDimension = null, writtenBreadthDimension = null }) {
     const originalBounds = boundsFromSides(leftX, rightX, bottomY, topY);
-    const centerlineBounds = centerlinePanelBounds(mark, leftX, rightX, bottomY, topY);
-    const splitBounds = splitBoundsAroundSlabMark(mark, originalBounds);
+    const writtenDimensionAuthority = /written-cad-dimension-panel/i.test(String(source || ""));
+    if (!writtenDimensionAuthority) return null;
     const originalMarksInside = slabMarksInsidePanelBounds(originalBounds);
     const rawCandidates = [
-      { bounds: originalBounds, basis: "p-line-closed-rectangle", centerlineBounds: null, originalMarkCount: originalMarksInside.length },
-      centerlineBounds ? {
-        bounds: {
-          minX: centerlineBounds.left,
-          maxX: centerlineBounds.right,
-          minY: centerlineBounds.bottom,
-          maxY: centerlineBounds.top,
-        },
-        basis: "centre-to-centre-panel-measurement",
-        centerlineBounds,
+      {
+        bounds: originalBounds,
+        basis: "written-cad-dimension-panel",
+        centerlineBounds: null,
         originalMarkCount: originalMarksInside.length,
-      } : null,
-      splitBounds ? {
-        bounds: splitBounds,
-        basis: "internal-split-around-slab-mark",
-        splitBounds,
-        originalMarkCount: originalMarksInside.length,
-      } : null,
+        writtenLengthDimension,
+        writtenBreadthDimension,
+      },
     ].filter(Boolean);
     const uniqueCandidateMap = new Map();
     rawCandidates.forEach((candidate) => {
@@ -6171,22 +6211,39 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
 
     function buildCandidate(candidate) {
       const panelBounds = candidate.bounds;
+      const writtenCandidate = candidate.basis === "written-cad-dimension-panel";
       const geometryLengthMm = Math.abs(panelBounds.maxX - panelBounds.minX);
       const geometryBreadthMm = Math.abs(panelBounds.maxY - panelBounds.minY);
-      const areaGeometryM2 = (geometryLengthMm * geometryBreadthMm) / 1000000;
+      const measuredLengthMm = writtenCandidate && isWrittenPanelDimension(candidate.writtenLengthDimension)
+        ? Number(candidate.writtenLengthDimension.valueMm)
+        : geometryLengthMm;
+      const measuredBreadthMm = writtenCandidate && isWrittenPanelDimension(candidate.writtenBreadthDimension)
+        ? Number(candidate.writtenBreadthDimension.valueMm)
+        : geometryBreadthMm;
+      const areaGeometryM2 = (measuredLengthMm * measuredBreadthMm) / 1000000;
       if (
-        geometryLengthMm < 650 ||
-        geometryBreadthMm < 650 ||
-        geometryLengthMm > 18000 ||
-        geometryBreadthMm > 18000 ||
+        measuredLengthMm < 650 ||
+        measuredBreadthMm < 650 ||
+        measuredLengthMm > 18000 ||
+        measuredBreadthMm > 18000 ||
         areaGeometryM2 < 1 ||
         areaGeometryM2 > 90
       ) return null;
       if (mark && Number.isFinite(mark.x) && Number.isFinite(mark.y)) {
-        if (mark.x <= panelBounds.minX || mark.x >= panelBounds.maxX || mark.y <= panelBounds.minY || mark.y >= panelBounds.maxY) return null;
+        const markTolerance = writtenCandidate ? 350 : 0;
+        if (
+          mark.x <= panelBounds.minX - markTolerance ||
+          mark.x >= panelBounds.maxX + markTolerance ||
+          mark.y <= panelBounds.minY - markTolerance ||
+          mark.y >= panelBounds.maxY + markTolerance
+        ) return null;
       }
-      const cadLength = cadDimensionForPanelSpan(grid.dimensions, { x: panelBounds.minX, y: (panelBounds.minY + panelBounds.maxY) / 2, x2: panelBounds.maxX, y2: (panelBounds.minY + panelBounds.maxY) / 2 }, "horizontal");
-      const cadBreadth = cadDimensionForPanelSpan(grid.dimensions, { x: (panelBounds.minX + panelBounds.maxX) / 2, y: panelBounds.minY, x2: (panelBounds.minX + panelBounds.maxX) / 2, y2: panelBounds.maxY }, "vertical");
+      const cadLength = writtenCandidate && isWrittenPanelDimension(candidate.writtenLengthDimension)
+        ? candidate.writtenLengthDimension
+        : cadDimensionForPanelSpan(grid.dimensions, { x: panelBounds.minX, y: (panelBounds.minY + panelBounds.maxY) / 2, x2: panelBounds.maxX, y2: (panelBounds.minY + panelBounds.maxY) / 2 }, "horizontal");
+      const cadBreadth = writtenCandidate && isWrittenPanelDimension(candidate.writtenBreadthDimension)
+        ? candidate.writtenBreadthDimension
+        : cadDimensionForPanelSpan(grid.dimensions, { x: (panelBounds.minX + panelBounds.maxX) / 2, y: panelBounds.minY, x2: (panelBounds.minX + panelBounds.maxX) / 2, y2: panelBounds.maxY }, "vertical");
       const lengthChoice = chooseSlabPanelDimension({ cadDimension: cadLength, gridDimension: null, geometryMm: geometryLengthMm });
       const breadthChoice = chooseSlabPanelDimension({ cadDimension: cadBreadth, gridDimension: null, geometryMm: geometryBreadthMm });
       const lengthM = (lengthChoice.valueMm || geometryLengthMm) / 1000;
@@ -6195,17 +6252,10 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
       if (lengthM <= 0 || breadthM <= 0 || lengthM > 16 || breadthM > 16 || areaM2 > 75 || areaM2 < 1) return null;
       const marksInsidePanel = slabMarksInsidePanelBounds(panelBounds);
       const boundaryQuality = panelBoundaryQuality(panelBounds);
-      if (candidate.basis === "p-line-closed-rectangle" && marksInsidePanel.length > 1) return null;
-      if (candidate.basis !== "p-line-closed-rectangle") {
-        if (Number(candidate.originalMarkCount || 0) <= 1) return null;
-        if (marksInsidePanel.length !== 1) return null;
-        if (!boundaryQuality.all) return null;
-      }
+      if (!writtenCandidate) return null;
       const splitEvidence = internalPanelSplitEvidence(panelBounds);
       let score = 0;
-      if (candidate.basis === "p-line-closed-rectangle") score -= boundaryQuality.all ? 2800 : 450;
-      if (candidate.basis === "internal-split-around-slab-mark") score += 500;
-      if (candidate.basis === "centre-to-centre-panel-measurement") score += 650;
+      if (writtenCandidate) score -= 5200;
       if (marksInsidePanel.length === 1) score -= 1000;
       if (marksInsidePanel.length > 1) score += 1800 + marksInsidePanel.length * 250;
       if (splitEvidence.count && marksInsidePanel.length > 1) score += 1400;
@@ -6379,47 +6429,218 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
   }
 
   function buildClosedPolylinePanelRows() {
-    return entities
-      .filter((item) => item.type === "LWPOLYLINE")
-      .map((item) => ({ item, bounds: closedPolylinePanelBounds(item) }))
-      .filter((entry) => entry.bounds)
-      .map((entry) => {
-        const { bounds } = entry;
-        const marksInside = slabMarksInsidePanelBounds(bounds);
-        const qssPanelLayer = /QSS|PANEL|SLAB/i.test(bounds.layer || "");
-        if (!marksInside.length && !qssPanelLayer) return null;
-        if (marksInside.length > 1) return null;
-        const center = { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
-        const mark = marksInside.length
-          ? marksInside
-              .map((item) => ({ item, distance: distance(item, center) }))
-              .sort((a, b) => a.distance - b.distance)[0].item
-          : null;
-        const row = createSlabRow({
-          mark,
-          leftX: bounds.minX,
-          rightX: bounds.maxX,
-          bottomY: bounds.minY,
-          topY: bounds.maxY,
-          source: "dxf-marked-p-line-closed-polyline",
-        });
-        if (!row) return null;
+    return [];
+  }
+
+  function sameSlabMark(first, second) {
+    return first &&
+      second &&
+      String(first.text || "").toUpperCase() === String(second.text || "").toUpperCase() &&
+      Math.abs(Number(first.x || 0) - Number(second.x || 0)) <= 120 &&
+      Math.abs(Number(first.y || 0) - Number(second.y || 0)) <= 120;
+  }
+
+  function writtenPanelDimensionEntries(orientation) {
+    const localTextDimensions = textDimensionEvidenceFromEntities(entities);
+    const dimensionPool = mergeDimensionEvidence(grid.dimensions || [], localTextDimensions);
+    return dimensionPool
+      .filter((dimension) => dimension.orientation === orientation)
+      .filter(isWrittenPanelDimension)
+      .map((dimension) => {
+        const range = dimensionSpanRange(dimension, orientation);
+        const axis = dimensionSpanAxis(dimension, orientation);
+        const valueMm = Number(dimension.valueMm || 0);
+        if (!range || !Number.isFinite(axis) || !Number.isFinite(valueMm)) return null;
+        if (valueMm < 250 || valueMm > 60000) return null;
+        const drawnSpan = Math.max(1, range.end - range.start);
+        const spanMismatchMm = Math.abs(drawnSpan - valueMm);
         return {
-          ...row,
-          needsReview: row.needsReview || !marksInside.length,
-          reviewNote: [
-            row.reviewNote,
-            !marksInside.length ? "Closed P-line panel has no slab mark inside; slab thickness uses default/linked table and needs review." : "",
-          ].filter(Boolean).join(" "),
-          evidence: {
-            ...(row.evidence || {}),
-            markedClosedPolylinePanel: true,
-            pLineLayer: bounds.layer,
-            pLineReadbackRule: "Marked closed polyline/P-line rectangle is used as the primary slab panel boundary; nearby geometry may only validate it, not shrink it.",
-          },
+          dimension,
+          range,
+          axis,
+          valueMm,
+          drawnSpan,
+          spanMismatchMm,
         };
       })
       .filter(Boolean);
+  }
+
+  function writtenDimensionCandidateScore(mark, entry, orientation) {
+    const along = orientation === "horizontal" ? Number(mark.x) : Number(mark.y);
+    const cross = orientation === "horizontal" ? Number(mark.y) : Number(mark.x);
+    const rangeDistance = distanceToRange(along, entry.range.start, entry.range.end);
+    const axisDistance = Math.abs(cross - entry.axis);
+    const textPoint = dimensionTextPoint(entry.dimension);
+    const valueMm = Math.max(1, Number(entry.valueMm || 0));
+    if (textPoint) {
+      const alongTextDistance = orientation === "horizontal"
+        ? Math.abs(Number(mark.x) - textPoint.x)
+        : Math.abs(Number(mark.y) - textPoint.y);
+      const crossTextDistance = orientation === "horizontal"
+        ? Math.abs(Number(mark.y) - textPoint.y)
+        : Math.abs(Number(mark.x) - textPoint.x);
+      const maxAlongDistance = Math.max(2600, Math.min(14000, valueMm * 1.35));
+      const maxCrossDistance = Math.max(1800, Math.min(9000, valueMm * 0.9));
+      if (alongTextDistance > maxAlongDistance || crossTextDistance > maxCrossDistance) return Infinity;
+      return crossTextDistance * 0.95 + alongTextDistance * 0.18 + rangeDistance * 0.12 + axisDistance * 0.2 + entry.spanMismatchMm * 0.005;
+    }
+    const maxUsefulDistance = Math.max(2200, Math.min(9000, valueMm * 1.8));
+    if (rangeDistance + axisDistance > maxUsefulDistance) return Infinity;
+    return rangeDistance * 0.55 + axisDistance + entry.spanMismatchMm * 0.02;
+  }
+
+  function writtenDimensionBoxForMark(mark, h, v) {
+    const spanBox = {
+      minX: h.range.start,
+      maxX: h.range.end,
+      minY: v.range.start,
+      maxY: v.range.end,
+    };
+    const widthMm = spanBox.maxX - spanBox.minX;
+    const heightMm = spanBox.maxY - spanBox.minY;
+    const insideTolerance = 350;
+    const markInsideSpanBox =
+      mark.x > spanBox.minX - insideTolerance &&
+      mark.x < spanBox.maxX + insideTolerance &&
+      mark.y > spanBox.minY - insideTolerance &&
+      mark.y < spanBox.maxY + insideTolerance;
+    const spanLooksUsable =
+      widthMm >= 650 &&
+      heightMm >= 650 &&
+      widthMm <= 22000 &&
+      heightMm <= 22000 &&
+      Math.abs(widthMm - h.valueMm) <= Math.max(60, h.valueMm * 0.08) &&
+      Math.abs(heightMm - v.valueMm) <= Math.max(60, v.valueMm * 0.08);
+    if (markInsideSpanBox && spanLooksUsable) {
+      return {
+        box: spanBox,
+        basis: "written-cad-dimension-span",
+        markCentered: false,
+      };
+    }
+    return null;
+  }
+
+  function buildWrittenDimensionPanelRows() {
+    const slabMarks = (slabInfo.slabMarks || [])
+      .filter((mark) => /^S\d+[A-Z]?$/i.test(String(mark.text || "").replace(/\s+/g, "")))
+      .filter((mark) => Number.isFinite(Number(mark.x)) && Number.isFinite(Number(mark.y)));
+    if (!slabMarks.length) return [];
+
+    const horizontalDimensions = writtenPanelDimensionEntries("horizontal");
+    const verticalDimensions = writtenPanelDimensionEntries("vertical");
+    if (!horizontalDimensions.length || !verticalDimensions.length) return [];
+
+    const rows = [];
+    const usedDimensionBoxes = new Set();
+    for (const mark of slabMarks) {
+      const candidates = [];
+      const relevantHorizontal = horizontalDimensions
+        .map((entry) => ({ entry, score: writtenDimensionCandidateScore(mark, entry, "horizontal") }))
+        .filter((item) => Number.isFinite(item.score))
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 16);
+      const relevantVertical = verticalDimensions
+        .map((entry) => ({ entry, score: writtenDimensionCandidateScore(mark, entry, "vertical") }))
+        .filter((item) => Number.isFinite(item.score))
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 16);
+      for (const hCandidate of relevantHorizontal) {
+        const h = hCandidate.entry;
+        for (const vCandidate of relevantVertical) {
+          const v = vCandidate.entry;
+          const resolvedPanel = writtenDimensionBoxForMark(mark, h, v);
+          if (!resolvedPanel) continue;
+          const { box, basis, markCentered } = resolvedPanel;
+          const widthMm = box.maxX - box.minX;
+          const heightMm = box.maxY - box.minY;
+          if (widthMm < 650 || heightMm < 650 || widthMm > 22000 || heightMm > 22000) continue;
+          const areaM2 = (h.valueMm * v.valueMm) / 1000000;
+          if (areaM2 < 1 || areaM2 > 180) continue;
+          const marksInside = slabMarksInsidePanelBounds(box);
+          const selectedMarkInside =
+            mark.x > box.minX - 350 &&
+            mark.x < box.maxX + 350 &&
+            mark.y > box.minY - 350 &&
+            mark.y < box.maxY + 350;
+          if (!selectedMarkInside) continue;
+          const otherMarksInside = marksInside.filter((item) => !sameSlabMark(item, mark));
+          const markCenterPenalty =
+            Math.abs(mark.x - (box.minX + box.maxX) / 2) / Math.max(1, widthMm) +
+            Math.abs(mark.y - (box.minY + box.maxY) / 2) / Math.max(1, heightMm);
+          const hAxisDistance = distanceToRange(h.axis, box.minY, box.maxY);
+          const vAxisDistance = distanceToRange(v.axis, box.minX, box.maxX);
+          if (!markCentered && hAxisDistance > Math.max(1800, heightMm * 0.75)) continue;
+          if (!markCentered && vAxisDistance > Math.max(1800, widthMm * 0.75)) continue;
+          const hAxisInsidePenalty = Math.min(600, hAxisDistance * 0.35);
+          const vAxisInsidePenalty = Math.min(600, vAxisDistance * 0.35);
+          const textPointH = dimensionTextPoint(h.dimension);
+          const textPointV = dimensionTextPoint(v.dimension);
+          const hTextPenalty = textPointH && textPointH.x >= box.minX - 250 && textPointH.x <= box.maxX + 250 ? 0 : 120;
+          const vTextPenalty = textPointV && textPointV.y >= box.minY - 250 && textPointV.y <= box.maxY + 250 ? 0 : 120;
+          candidates.push({
+            h,
+            v,
+            box,
+            score:
+              h.spanMismatchMm * 0.01 +
+              v.spanMismatchMm * 0.01 +
+              hCandidate.score * 0.12 +
+              vCandidate.score * 0.12 +
+              markCenterPenalty * 220 +
+              hAxisInsidePenalty +
+              vAxisInsidePenalty +
+              hTextPenalty +
+              vTextPenalty +
+              (markCentered ? 900 : 0) +
+              otherMarksInside.length * 450,
+            otherMarksInside,
+            basis,
+          });
+        }
+      }
+      const selected = candidates.sort((a, b) => a.score - b.score)[0];
+      if (!selected) continue;
+      const key = candidateKeyForBounds(selected.box, 60);
+      if (usedDimensionBoxes.has(key)) continue;
+      const row = createSlabRow({
+        mark,
+        leftX: selected.box.minX,
+        rightX: selected.box.maxX,
+        bottomY: selected.box.minY,
+        topY: selected.box.maxY,
+        source: "written-cad-dimension-panel",
+        writtenLengthDimension: selected.h.dimension,
+        writtenBreadthDimension: selected.v.dimension,
+      });
+      if (!row) continue;
+      usedDimensionBoxes.add(key);
+      const reviewNote = selected.otherMarksInside.length
+        ? `need review`
+        : row.reviewNote;
+      rows.push({
+        ...row,
+        source: "written-cad-dimension-panel",
+        needsReview: row.needsReview || selected.otherMarksInside.length > 0,
+        reviewNote,
+        evidence: {
+          ...(row.evidence || {}),
+          writtenDimensionPanel: true,
+          selectedPanelMeasurementBasis: "written-cad-dimension-panel",
+          panelSourceRule: "When a slab panel has written CAD dimensions in both directions, those written dimensions are the measurement authority and the reference drawing marks that panel as P1/P2.",
+          horizontalWrittenDimensionMm: Math.round(selected.h.valueMm),
+          verticalWrittenDimensionMm: Math.round(selected.v.valueMm),
+          horizontalDimensionSource: selected.h.dimension.valueSource || "",
+          verticalDimensionSource: selected.v.dimension.valueSource || "",
+          horizontalDimensionText: selected.h.dimension.text || "",
+          verticalDimensionText: selected.v.dimension.text || "",
+          otherSlabMarksInsideWrittenDimensionPanel: selected.otherMarksInside.map((item) => item.text),
+          writtenDimensionPanelBoxBasis: selected.basis,
+        },
+      });
+    }
+    return rows;
   }
 
   function buildBarrierCellRows() {
@@ -6480,96 +6701,16 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
     return rows;
   }
 
-  const barrierCellRows = buildBarrierCellRows();
-  const slabMarkEnclosureRows = (slabInfo.slabMarks || []).map((mark) => {
-    const x = mark.x;
-    const y = mark.y;
-    const topCandidates = horizontal
-      .filter((line) => x >= line.minX - 300 && x <= line.maxX + 300 && line.y > y)
-      .sort((a, b) => a.y - b.y)
-      .slice(0, 10);
-    const bottomCandidates = horizontal
-      .filter((line) => x >= line.minX - 300 && x <= line.maxX + 300 && line.y < y)
-      .sort((a, b) => b.y - a.y)
-      .slice(0, 10);
-    const rightCandidates = vertical
-      .filter((line) => y >= line.minY - 300 && y <= line.maxY + 300 && line.x > x)
-      .sort((a, b) => a.x - b.x)
-      .slice(0, 10);
-    const leftCandidates = vertical
-      .filter((line) => y >= line.minY - 300 && y <= line.maxY + 300 && line.x < x)
-      .sort((a, b) => b.x - a.x)
-      .slice(0, 10);
-    const candidates = [];
-    for (const left of leftCandidates) {
-      for (const right of rightCandidates) {
-        for (const bottom of bottomCandidates) {
-          for (const top of topCandidates) {
-            const width = Math.abs(right.x - left.x);
-            const height = Math.abs(top.y - bottom.y);
-            const areaM2 = (width * height) / 1000000;
-            if (width < 700 || height < 700 || width > 18000 || height > 18000 || areaM2 < 1 || areaM2 > 90) continue;
-            const coverageOk =
-              hasHorizontalCoverage(horizontal, bottom.y, left.x, right.x, 450) &&
-              hasHorizontalCoverage(horizontal, top.y, left.x, right.x, 450) &&
-              hasVerticalCoverage(vertical, left.x, bottom.y, top.y, 450) &&
-              hasVerticalCoverage(vertical, right.x, bottom.y, top.y, 450);
-            const marksInside = (slabInfo.slabMarks || []).filter((item) =>
-              item.x > Math.min(left.x, right.x) + 80 &&
-              item.x < Math.max(left.x, right.x) - 80 &&
-              item.y > Math.min(bottom.y, top.y) + 80 &&
-              item.y < Math.max(bottom.y, top.y) - 80);
-            const otherMarks = marksInside.filter((item) => item !== mark).length;
-            const minSideM = Math.min(width, height) / 1000;
-            const compactPenalty = minSideM < 1.2 ? 60 : 0;
-            const markPenalty = otherMarks ? 1000 + otherMarks * 80 : 0;
-            const coveragePenalty = coverageOk ? 0 : 800;
-            const distancePenalty = ((Math.abs(left.x - x) + Math.abs(right.x - x) + Math.abs(bottom.y - y) + Math.abs(top.y - y)) / 1000) * 0.02;
-            const singleMarkAreaPreference = coverageOk && !otherMarks ? -Math.min(areaM2, 75) * 2.5 : 0;
-            const areaBandPenalty = areaM2 >= 2 && areaM2 <= 75 ? 0 : 80;
-            candidates.push({
-              left,
-              right,
-              bottom,
-              top,
-              score: compactPenalty + markPenalty + coveragePenalty + distancePenalty + singleMarkAreaPreference + areaBandPenalty,
-              coverageOk,
-              marksInside,
-              minSideM,
-              areaM2,
-            });
-          }
-        }
-      }
-    }
-    const selected = candidates.sort((a, b) => a.score - b.score)[0];
-    if (!selected) return null;
-    const row = createSlabRow({
-      mark,
-      leftX: selected.left.x,
-      rightX: selected.right.x,
-      bottomY: selected.bottom.y,
-      topY: selected.top.y,
-      source: selected.coverageOk ? "dxf-slab-enclosure-candidate" : "dxf-slab-enclosure-candidate-review",
-    });
-    const finalMarksInside = Array.isArray(row?.evidence?.slabMarksInsidePanel)
-      ? row.evidence.slabMarksInsidePanel
-      : selected.marksInside.map((item) => item.text);
-    if (row && (!selected.coverageOk || selected.minSideM < 1.2 || finalMarksInside.length > 1)) {
-      row.needsReview = true;
-      row.reviewNote = [
-        row.reviewNote,
-        !selected.coverageOk ? "Panel boundary uses best enclosure candidate but full line coverage is not proven." : "",
-        selected.minSideM < 1.2 ? "Small slab side detected; verify this is not a beam/end fragment." : "",
-        finalMarksInside.length > 1 ? `Multiple slab marks inside selected panel: ${finalMarksInside.join(", ")}.` : "",
-      ].filter(Boolean).join(" ");
-      row.evidence.enclosureCandidateReview = true;
-      row.evidence.enclosureCandidateScore = Math.round(selected.score * 100) / 100;
-    }
-    return row;
-  }).filter(Boolean);
   const closedPolylineRows = buildClosedPolylinePanelRows();
-  const markRows = [...closedPolylineRows, ...barrierCellRows, ...slabMarkEnclosureRows];
+  const writtenDimensionRows = buildWrittenDimensionPanelRows();
+  const markRows = [...closedPolylineRows, ...writtenDimensionRows].map((row) => ({
+    ...row,
+    evidence: {
+      ...(row.evidence || {}),
+      slabPanelGenerationSuppressed: true,
+      slabPanelSourceRule: "Only user/provided closed panel geometry or written CAD dimensions with actual dimension spans can create slab quantity rows. Slab marks, grid spacing, and open bays are review evidence only.",
+    },
+  }));
 
   function boundsForPanelRow(row) {
     return {
@@ -6718,7 +6859,7 @@ function extractSlabRowsFromDxf(fileName, role, entities, slabInfo, cutouts = []
   }
 
   const rows = applySlabBayDimensionNormalization(
-    applyVerifiedSlabPanelOverrides(collapseDuplicatePanelRows(assignUnmatchedCutoutsToNearestPanel(markRows, cutouts))),
+    collapseDuplicatePanelRows(assignUnmatchedCutoutsToNearestPanel(markRows, cutouts)),
   )
     .sort((a, b) => {
       const boxA = boundsForPanelRow(a);
@@ -7177,9 +7318,27 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
     extractSlabThicknessInfo(textEntities),
     [rawSlabInfo, embeddedDetailSchedules.slabInfo, ...(linkedSchedules.slabInfos || [])],
   );
-  const cutouts = extractCutoutsFromDxf(file.name, entities);
-  const grid = extractGridEvidence(entities);
   const areaItem = itemType === "slab" || itemType === "raft";
+  const cutouts = extractCutoutsFromDxf(file.name, entities);
+  let grid = extractGridEvidence(entities);
+  if (areaItem && entitiesAfterFramingRegion && entitiesAfterFramingRegion !== entities) {
+    const framingRegionGrid = extractGridEvidence(entitiesAfterFramingRegion);
+    const framingRegionDimensions = (framingRegionGrid.dimensions || [])
+      .filter((dimension) => dimensionEvidenceInsideRegion(dimension, takeoffRegion, 2500));
+    const mergedDimensions = mergeDimensionEvidence(grid.dimensions || [], framingRegionDimensions);
+    if (mergedDimensions.length > (grid.dimensions || []).length) {
+      grid = {
+        ...grid,
+        dimensions: mergedDimensions,
+        dimensionDiagnostics: {
+          ...(grid.dimensionDiagnostics || {}),
+          supplementalFramingRegionDimensions: framingRegionDimensions.length,
+          mergedDimensionCount: mergedDimensions.length,
+          writtenDimensionFallback: true,
+        },
+      };
+    }
+  }
   const beamSizeById = {
     ...(embeddedDetailSchedules.beamSizeById || {}),
     ...(linkedSchedules.beamSizeById || {}),
@@ -7469,17 +7628,17 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         needsReview: true,
         reviewNote: reviewText(
           row.reviewNote || "",
-          "Review quantity candidate: verify this P-panel in the reference drawing before final billing.",
+          "Review quantity candidate: verify this slab row in the reference drawing before final billing.",
         ),
         evidence: {
           ...(row.evidence || {}),
           reviewQuantityFromBlockedSlab: true,
-          reviewQuantityBasis: "P-panel review rows generated after the first slab reader produced a false/small panel set.",
+          reviewQuantityBasis: "Review slab rows generated after the first slab reader produced an unreliable small panel set.",
         },
       }));
       const reviewNetAreaM2 = slabNetTotal(slabReviewReferenceRows);
       const reviewRowsWithBoundaryEvidence = slabReviewReferenceRows.filter((row) =>
-        /nearest-surrounding-boundaries|p-line|closed|barrier|enclosure|verified/i.test(String(row.evidence?.boundaryBasis || row.source || "")),
+        /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|verified/i.test(String(row.evidence?.boundaryBasis || row.source || "")),
       ).length;
       const reviewCoverageRatio = rawSlabMarkCount
         ? slabReviewReferenceRows.length / rawSlabMarkCount
@@ -7529,6 +7688,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
     faceWalkLimits: FAST_CAD_ENGINE_LIMITS,
     planRegion: null,
     markBeamIds: false,
+    quantityRows: referenceRowsForDrawing,
     boundarySlabPanels: {
       boundaryToleranceMm: 25,
       clusterToleranceMm: 25,
@@ -7551,6 +7711,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
           planRegion: null,
           fastSlabPanelReference: true,
           markBeamIds: false,
+          quantityRows: referenceRowsForDrawing,
         })
       : null;
     referenceDrawing = strictReference?.ok && Number(strictReference.panelMarks || 0) > 0
@@ -7571,6 +7732,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
           faceWalkLimits: FAST_CAD_ENGINE_LIMITS,
           planRegion: null,
           markBeamIds: false,
+          quantityRows: referenceRowsForDrawing,
         });
   } else if (areaItem) {
     const strictReference = await createStrictSlabReferenceDrawing();
@@ -7584,7 +7746,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
       preferDwg: isDwgLikeExtension(ext),
     });
   }
-  if (areaItem && referenceDrawing?.ok && !referenceDrawing.summary?.reviewOnlyReference && Number(referenceDrawing.panelMarks || 0) > 0) {
+  if (SLAB_AUTO_PANEL_CREATION_ENABLED && areaItem && referenceDrawing?.ok && !referenceDrawing.summary?.reviewOnlyReference && Number(referenceDrawing.panelMarks || 0) > 0) {
     const directReferencePanelRows = slabRowsFromReferencePanelMarks(referenceDrawing, file.name, role, slabInfo, cutouts, grid);
     const directReferenceAcceptedRows = finalQuantityRows(directReferencePanelRows, itemType);
     const directReferenceArea = slabNetTotal(directReferenceAcceptedRows);
@@ -7598,7 +7760,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         ...row,
         reviewNote: reviewText(
           row.reviewNote || "",
-          row.needsReview ? "" : "QSS-SLAB-002: quantity row came directly from QSS reference P-panel box data.",
+          row.needsReview ? "" : "QSS-SLAB-002: quantity row came directly from verified reference slab panel data.",
         ),
         evidence: {
           ...(row.evidence || {}),
@@ -7623,7 +7785,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
     } else if (directReferencePanelRows.length && !finalQuantityRows(rows, itemType).length) {
       rows = referencePanelReviewRows(
         directReferencePanelRows,
-        "REVIEW ONLY: P-panel boxes were created from the reference drawing, but coverage/area gates did not pass for final quantity. Check these rows against the downloaded reference DWG.",
+        "REVIEW ONLY: slab quantity rows were created for checking, but coverage/area gates did not pass for final quantity. Check these rows against the downloaded reference DWG.",
       );
       engineFallback = {
         ok: true,
@@ -7640,7 +7802,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
       reviewQuantityFromBlockedSlab = true;
     }
   }
-  if (!referencePanelReadbackUsed && areaItem && referenceDrawing?.ok && !referenceDrawing.summary?.reviewOnlyReference && referenceDrawing.dxfPath && fs.existsSync(referenceDrawing.dxfPath) && Number(referenceDrawing.panelMarks || 0) > 0) {
+  if (SLAB_AUTO_PANEL_CREATION_ENABLED && !referencePanelReadbackUsed && areaItem && referenceDrawing?.ok && !referenceDrawing.summary?.reviewOnlyReference && referenceDrawing.dxfPath && fs.existsSync(referenceDrawing.dxfPath) && Number(referenceDrawing.panelMarks || 0) > 0) {
     const readbackResult = await runTopologyTakeoffEngine(referenceDrawing.dxfPath, file.name, role, itemType, FAST_CAD_ENGINE_LIMITS);
     const readbackSource = String(readbackResult.result?.slab?.source || "");
     const readbackAcceptedRows = readbackResult.ok ? finalQuantityRows(readbackResult.rows, itemType) : [];
@@ -7664,7 +7826,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         ...row,
         reviewNote: reviewText(
           row.reviewNote || "",
-          row.needsReview ? "" : "QSS-SLAB-002: quantity row came from closed P-panel reference drawing read-back.",
+          row.needsReview ? "" : "QSS-SLAB-002: quantity row came from verified reference slab panel read-back.",
         ),
         evidence: {
           ...(row.evidence || {}),
@@ -7691,7 +7853,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
           ...row,
           reviewNote: reviewText(
             row.reviewNote || "",
-            row.needsReview ? "" : "QSS-SLAB-002: quantity row came from QSS reference P-panel box data after DXF read-back was weak.",
+            row.needsReview ? "" : "QSS-SLAB-002: quantity row came from verified reference slab panel data after DXF read-back was weak.",
           ),
           evidence: {
             ...(row.evidence || {}),
@@ -7715,7 +7877,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
       } else if (directReferencePanelRows.length && !finalQuantityRows(rows, itemType).length) {
         rows = referencePanelReviewRows(
           directReferencePanelRows,
-          "REVIEW ONLY: P-panel boxes were created after DXF read-back was weak, but final coverage/area gates did not pass. Check these rows against the downloaded reference DWG.",
+          "REVIEW ONLY: reference slab-panel rows were created after DXF read-back was weak, but coverage/area gates did not pass. Check these rows against the downloaded reference DWG.",
         );
         engineFallback = {
           ok: true,
@@ -7757,7 +7919,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
     );
   }
   if (areaItem && /topology_fallback/.test(selectedCalculationRoute)) {
-    routeWarnings.push("Slab extraction used topology fallback; final quantity requires CAD P-line/beam-boundary read-back and independent coverage validation.");
+    routeWarnings.push("Slab extraction used topology fallback; final quantity requires written CAD dimensions or verified beam/wall/column boundary validation.");
   }
   const weakBeamRoute = !areaItem && /topology_fallback|qb_beam_reference_readback/.test(selectedCalculationRoute);
   if (markedDimensionFastRows.length && rows === beamRows) {
@@ -8080,8 +8242,8 @@ function takeoffEngineSlabRows(result, fileName, role) {
       reviewNote: reviewText(
         panel.remarks || "",
         needsReview
-          ? "Topology-only slab panel; final quantity requires CAD P-line/beam-boundary read-back confirmation."
-          : "Accepted from QSS closed P-panel polyline read-back.",
+          ? "Topology-only slab panel; final quantity requires written CAD dimension or verified beam-boundary confirmation."
+          : "Accepted from verified slab-panel read-back.",
       ),
       ocrEvidence: `${fileName} | ${panel.gridBand || ""} | ${panel.panel || ""}`.trim(),
       evidence: {
@@ -8106,6 +8268,7 @@ function takeoffEngineSlabRows(result, fileName, role) {
 }
 
 function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabInfo = {}, cutouts = [], grid = { dimensions: [] }) {
+  if (!SLAB_AUTO_PANEL_CREATION_ENABLED) return [];
   const panels = Array.isArray(referenceDrawing?.panelMarksData) ? referenceDrawing.panelMarksData : [];
   if (!panels.length) return [];
   return panels.map((panel) => {
@@ -8121,6 +8284,21 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
       x: (minX + maxX) / 2,
       y: (minY + maxY) / 2,
     };
+    const panelDimensionText = [
+      panel.source,
+      panel.dimensionAuthority,
+      panel.lengthBasis,
+      panel.breadthBasis,
+      panel.dimensionBasis,
+    ].filter(Boolean).join(" ");
+    const authoritativeLengthMm = Number(panel.authoritativeLengthMm);
+    const authoritativeBreadthMm = Number(panel.authoritativeBreadthMm);
+    const writtenDimensionAuthority =
+      /written-cad-dimension|marked-cad-dimension|visible-dimension-text|text-dimension-label|cad-dimension/i.test(panelDimensionText) &&
+      Number.isFinite(authoritativeLengthMm) &&
+      Number.isFinite(authoritativeBreadthMm) &&
+      authoritativeLengthMm > 0 &&
+      authoritativeBreadthMm > 0;
     const cadLength = cadDimensionForPanelSpan(grid.dimensions, {
       x: minX,
       y: panelCenter.y,
@@ -8133,16 +8311,30 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
       x2: panelCenter.x,
       y2: maxY,
     }, "vertical");
-    const lengthChoice = chooseSlabPanelDimension({
-      cadDimension: cadLength,
-      gridDimension: null,
-      geometryMm: geometryLengthMm,
-    });
-    const breadthChoice = chooseSlabPanelDimension({
-      cadDimension: cadBreadth,
-      gridDimension: null,
-      geometryMm: geometryBreadthMm,
-    });
+    const lengthChoice = writtenDimensionAuthority
+      ? {
+          valueMm: authoritativeLengthMm,
+          source: panel.lengthBasis || "written-cad-dimension-panel",
+          conflict: false,
+          values: [{ source: panel.lengthBasis || "written-cad-dimension-panel", valueMm: authoritativeLengthMm }],
+        }
+      : chooseSlabPanelDimension({
+          cadDimension: cadLength,
+          gridDimension: null,
+          geometryMm: geometryLengthMm,
+        });
+    const breadthChoice = writtenDimensionAuthority
+      ? {
+          valueMm: authoritativeBreadthMm,
+          source: panel.breadthBasis || "written-cad-dimension-panel",
+          conflict: false,
+          values: [{ source: panel.breadthBasis || "written-cad-dimension-panel", valueMm: authoritativeBreadthMm }],
+        }
+      : chooseSlabPanelDimension({
+          cadDimension: cadBreadth,
+          gridDimension: null,
+          geometryMm: geometryBreadthMm,
+        });
     const length = round3(Number(lengthChoice.valueMm || geometryLengthMm) / 1000);
     const breadth = round3(Number(breadthChoice.valueMm || geometryBreadthMm) / 1000);
     const grossArea = length * breadth;
@@ -8208,7 +8400,8 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
     const weakestCoverage = coverageValues.length ? Math.min(...coverageValues) : 0;
     const status = String(panel.status || "");
     const multipleMarks = Number(panel.slabMarksInsideCount || marksInside.length || 0) > 1;
-    const weakBoundaryCoverage = coverageValues.length < 4 || weakestCoverage < 0.85;
+    const dimensionAuthorityPanel = writtenDimensionAuthority || /written-cad-dimension/i.test(String(panel.source || ""));
+    const weakBoundaryCoverage = !dimensionAuthorityPanel && (coverageValues.length < 4 || weakestCoverage < 0.85);
     const dimensionConflict = Boolean(lengthChoice.conflict || breadthChoice.conflict);
     const needsReview = /review/i.test(status) || multipleMarks || weakBoundaryCoverage || cutoutOverlapRatio > 0.02 || dimensionConflict;
     const dimensionReview = dimensionConflict
@@ -8230,24 +8423,24 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
       spacing: 150,
       nos: 1,
       openings: Math.min(cutoutAreaM2, grossArea),
-      source: "dxf-slab-reference-panel-box",
+      source: "dxf-slab-reference-panel",
       needsReview,
       reviewNote: reviewText(
         "",
         cutoutOverlapRatio > 0.02
           ? `Cutout/open-to-sky overlap deducted ${round3(Math.min(cutoutAreaM2, grossArea))} sqm; verify this panel before final billing.`
           : weakBoundaryCoverage
-          ? `Review needed: P-panel boundary coverage is weak (${Math.round(weakestCoverage * 100)}%). Panel box may not align with beam/wall/column faces.`
+          ? "need review"
           : dimensionReview
           ? dimensionReview
           : needsReview
-          ? "Reference P-panel box was created, but boundary/slab-mark evidence needs review before final billing."
-          : "QSS-SLAB-002: quantity row came from closed P-panel reference drawing box.",
+          ? "need review"
+          : "QSS-SLAB-002: quantity row came from verified slab panel evidence.",
       ),
       ocrEvidence: `${fileName} | ${panel.gridBand || ""} | ${panel.label || panel.id || slabName}`.trim(),
       evidence: {
         fileName,
-        source: "reference-working-drawing-panel-box",
+        source: "reference-working-drawing-panel",
         boundaryBasis: panel.source || "Slab mark from nearest four beam/support boundaries",
         selectedPanelMeasurementBasis: panel.source || "",
         referencePanelDirectBoxReadback: true,
@@ -8266,10 +8459,12 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
         geometryBreadthM: round3(geometryBreadthMm / 1000),
         cadLengthM: cadLength ? round3(Number(cadLength.valueMm || 0) / 1000) : 0,
         cadBreadthM: cadBreadth ? round3(Number(cadBreadth.valueMm || 0) / 1000) : 0,
+        authoritativeLengthM: writtenDimensionAuthority ? round3(authoritativeLengthMm / 1000) : 0,
+        authoritativeBreadthM: writtenDimensionAuthority ? round3(authoritativeBreadthMm / 1000) : 0,
         measuredLengthM: length,
         measuredBreadthM: breadth,
-        lengthBasis: lengthChoice.source || "reference-panel-box",
-        breadthBasis: breadthChoice.source || "reference-panel-box",
+        lengthBasis: lengthChoice.source || "reference-slab-panel",
+        breadthBasis: breadthChoice.source || "reference-slab-panel",
         dimensionValues: {
           length: lengthChoice.values || [],
           breadth: breadthChoice.values || [],
@@ -8297,6 +8492,7 @@ function slabRowsFromReferencePanelMarks(referenceDrawing, fileName, role, slabI
 }
 
 function referencePanelReviewRows(rows, note = "") {
+  if (!SLAB_AUTO_PANEL_CREATION_ENABLED) return [];
   return (rows || [])
     .filter((row) => Number(row.length || 0) > 0 && Number(row.breadth || 0) > 0)
     .map((row) => ({
@@ -8304,11 +8500,11 @@ function referencePanelReviewRows(rows, note = "") {
       needsReview: true,
       reviewNote: reviewText(
         row.reviewNote || "",
-        note || "REVIEW ONLY: P-panel box was created, but final boundary/read-back gates did not pass. Use this row for checking against the reference drawing only.",
+        note || "REVIEW ONLY: slab quantity row was created, but final boundary/read-back gates did not pass. Use this row for checking against the reference drawing only.",
       ),
       evidence: {
         ...(row.evidence || {}),
-        referencePanelBoxReviewOnly: true,
+        referencePanelReviewOnly: true,
         referenceReadbackAccepted: false,
         qssRuleIds: [...new Set([...(row.evidence?.qssRuleIds || []), "QSS-SLAB-002", "QSS-QA-001"])],
       },
@@ -8464,6 +8660,127 @@ function referencePanelLabelHeight(panel) {
 
 function referenceDimensionTextHeight(box) {
   return referenceTextHeightForBox(box, { min: 130, max: 230, fraction: 0.055 });
+}
+
+function quantityRowPanelBox(row = {}) {
+  const evidence = row.evidence || {};
+  const left = Number(evidence.panelLeftX);
+  const right = Number(evidence.panelRightX);
+  const bottom = Number(evidence.panelBottomY);
+  const top = Number(evidence.panelTopY);
+  if (![left, right, bottom, top].every(Number.isFinite)) return null;
+  return {
+    minX: Math.min(left, right),
+    maxX: Math.max(left, right),
+    minY: Math.min(bottom, top),
+    maxY: Math.max(bottom, top),
+  };
+}
+
+function referenceBoxArea(box) {
+  if (!validBox(box)) return 0;
+  return Math.max(0, box.maxX - box.minX) * Math.max(0, box.maxY - box.minY);
+}
+
+function referenceBoxOverlapRatio(first, second) {
+  if (!validBox(first) || !validBox(second)) return 0;
+  const overlapX = Math.max(0, Math.min(first.maxX, second.maxX) - Math.max(first.minX, second.minX));
+  const overlapY = Math.max(0, Math.min(first.maxY, second.maxY) - Math.max(first.minY, second.minY));
+  const overlap = overlapX * overlapY;
+  if (!overlap) return 0;
+  return overlap / Math.max(1, Math.min(referenceBoxArea(first), referenceBoxArea(second)));
+}
+
+function panelMarksFromQuantityRows(rows = []) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => {
+      const box = quantityRowPanelBox(row);
+      if (!validBox(box)) return false;
+      const evidence = row.evidence || {};
+      const sourceText = [
+        row.source,
+        evidence.source,
+        evidence.boundaryBasis,
+        evidence.selectedPanelMeasurementBasis,
+        evidence.lengthBasis,
+        evidence.breadthBasis,
+        evidence.dimensionBasis,
+      ].filter(Boolean).join(" ");
+      const hasWrittenDimensionEvidence =
+        /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|cad-dimension/i.test(sourceText) ||
+        (Number.isFinite(Number(evidence.cadLengthM)) && Number.isFinite(Number(evidence.cadBreadthM)));
+      const blockedWeakSource = /topology|barrier-cell|enclosure-candidate|open-bay|slab-mark-review|locked-slab-review|grid-infer|fake|weak/i.test(sourceText);
+      return hasWrittenDimensionEvidence && !blockedWeakSource;
+    })
+    .map((row, index) => {
+      const box = quantityRowPanelBox(row);
+      if (!validBox(box)) return null;
+      const label = /^P\d+$/i.test(String(row.panelNo || "")) ? String(row.panelNo).toUpperCase() : `P${index + 1}`;
+      const evidence = row.evidence || {};
+      const sourceText = [
+        row.source,
+        evidence.source,
+        evidence.boundaryBasis,
+        evidence.selectedPanelMeasurementBasis,
+        evidence.lengthBasis,
+        evidence.breadthBasis,
+        evidence.dimensionBasis,
+      ].filter(Boolean).join(" ");
+      const dimensionAuthority =
+        /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|cad-dimension/i.test(sourceText) ||
+        /written-cad-dimension/i.test(String(row.source || ""));
+      const authoritativeLengthMm = dimensionAuthority && Number(row.length) > 0
+        ? Math.round(Number(row.length) * 1000)
+        : null;
+      const authoritativeBreadthMm = dimensionAuthority && Number(row.breadth) > 0
+        ? Math.round(Number(row.breadth) * 1000)
+        : null;
+      return {
+        id: label,
+        label,
+        x: (box.minX + box.maxX) / 2,
+        y: (box.minY + box.maxY) / 2,
+        box,
+        source: dimensionAuthority ? "written-cad-dimension-panel" : row.source || "quantity-row",
+        status: row.needsReview ? "need review" : "",
+        slabMark: evidence.slabMark || row.name || "",
+        slabMarkX: evidence.panelMarkX ?? null,
+        slabMarkY: evidence.panelMarkY ?? null,
+        slabMarksInside: Array.isArray(evidence.slabMarksInsidePanel) ? evidence.slabMarksInsidePanel : [],
+        slabMarksInsideCount: Number(evidence.slabMarksInsidePanelCount || 0),
+        areaSqm: round3(Math.max(Number(row.length || 0) * Number(row.breadth || 0) - Number(row.openings || 0), 0)),
+        dimensionAuthority: dimensionAuthority ? "written-cad-dimension" : "",
+        authoritativeLengthMm,
+        authoritativeBreadthMm,
+        lengthBasis: dimensionAuthority ? evidence.lengthBasis || "written-cad-dimension-panel" : "",
+        breadthBasis: dimensionAuthority ? evidence.breadthBasis || "written-cad-dimension-panel" : "",
+        dimensionValues: evidence.dimensionValues || null,
+        quantityRowBacked: true,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const topDelta = b.box.maxY - a.box.maxY;
+      if (Math.abs(topDelta) > 300) return topDelta;
+      return a.box.minX - b.box.minX;
+    })
+    .map((panel, index) => {
+      const label = /^P\d+$/i.test(panel.label) ? panel.label : `P${index + 1}`;
+      return { ...panel, id: label, label };
+    });
+}
+
+function mergeReferencePanelMarks(referenceMarks = [], quantityPanelMarks = []) {
+  const output = [];
+  for (const panel of quantityPanelMarks) {
+    if (validBox(panel.box)) output.push(panel);
+  }
+  for (const panel of referenceMarks || []) {
+    if (!validBox(panel.box)) continue;
+    const duplicate = output.some((existing) => referenceBoxOverlapRatio(existing.box, panel.box) >= 0.7);
+    if (!duplicate) output.push(panel);
+  }
+  return output;
 }
 
 function dimensionTextMm(valueMm) {
@@ -8856,7 +9173,7 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
     const boundedCorrectionEntities = options.fastSlabPanelReference
       ? filterEntitiesForFastSlabReference(correctionEntitiesForReference, slabSeedEntities, options.fastSlabPanelFilter || {})
       : correctionEntitiesForReference;
-    const reference = referenceModule.createReferenceWorkingDrawingData(boundedReferenceEntities, {
+    const referenceBase = referenceModule.createReferenceWorkingDrawingData(boundedReferenceEntities, {
       correctionEntities: boundedCorrectionEntities,
       faceWalk: options.faceWalkLimits || CAD_ENGINE_LIMITS,
       planRegion: options.planRegion || null,
@@ -8885,6 +9202,29 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
           }
         : undefined,
     });
+    const quantityPanelMarks = panelMarksFromQuantityRows(options.quantityRows || []);
+    const reference = {
+      ...referenceBase,
+      panelMarks: SLAB_AUTO_PANEL_CREATION_ENABLED && quantityPanelMarks.length
+        ? mergeReferencePanelMarks([], quantityPanelMarks)
+        : quantityPanelMarks.map((panel) => ({
+            id: panel.id,
+            label: panel.label,
+            x: panel.x,
+            y: panel.y,
+            source: panel.source || "",
+            status: panel.status || "",
+            slabMark: panel.slabMark || "",
+            dimensionAuthority: panel.dimensionAuthority || "",
+            quantityRowBacked: Boolean(panel.quantityRowBacked),
+          })),
+      summary: {
+        ...(referenceBase.summary || {}),
+        quantityRowPanelMarks: quantityPanelMarks.length,
+        generatedPanelMarksFromReferenceModuleSuppressed: true,
+        autoSlabPanelCreationDisabled: !SLAB_AUTO_PANEL_CREATION_ENABLED,
+      },
+    };
 
     const nextHandle = createDxfHandleGenerator(source);
     const ownerHandle = findEntityOwnerHandle(source);
@@ -8897,13 +9237,17 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
     };
     let panelPolylineCount = 0;
     let panelDimensionCount = 0;
-    const panelMarksForOutput = (reference.panelMarks || []).filter((panel) => validBox(panel.box));
+    const panelMarksForOutput = SLAB_AUTO_PANEL_CREATION_ENABLED
+      ? (reference.panelMarks || []).filter((panel) => validBox(panel.box))
+      : (reference.panelMarks || []).filter((panel) => Number.isFinite(Number(panel.x)) && Number.isFinite(Number(panel.y)));
     for (const panel of panelMarksForOutput) {
-      const addedPanel = addPanelWorkingEntities(additions, nextHandle, ownerHandle, panel, referenceLayers, {
-        markPolyline: true,
-        markDimensions: false,
-      });
-      if (addedPanel) panelPolylineCount += 1;
+      if (SLAB_AUTO_PANEL_CREATION_ENABLED) {
+        const addedPanel = addPanelWorkingEntities(additions, nextHandle, ownerHandle, panel, referenceLayers, {
+          markPolyline: true,
+          markDimensions: false,
+        });
+        if (addedPanel) panelPolylineCount += 1;
+      }
       const labelX = validBox(panel.box) ? (panel.box.minX + panel.box.maxX) / 2 : panel.x;
       const labelY = validBox(panel.box) ? (panel.box.minY + panel.box.maxY) / 2 : panel.y;
       const panelLabelHeight = referencePanelLabelHeight(panel);
@@ -9001,7 +9345,7 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
         label: panel.label,
         x: panel.x,
         y: panel.y,
-        box: panel.box || null,
+        box: SLAB_AUTO_PANEL_CREATION_ENABLED ? (panel.box || null) : null,
         gridBand: panel.gridBand || "",
         status: panel.status || "",
         source: panel.source || "",
@@ -9014,6 +9358,13 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
         boundaryTypes: panel.boundaryTypes || null,
         splitAxes: panel.splitAxes || null,
         areaSqm: panel.areaSqm || null,
+        dimensionAuthority: panel.dimensionAuthority || "",
+        authoritativeLengthMm: panel.authoritativeLengthMm ?? null,
+        authoritativeBreadthMm: panel.authoritativeBreadthMm ?? null,
+        lengthBasis: panel.lengthBasis || "",
+        breadthBasis: panel.breadthBasis || "",
+        dimensionValues: panel.dimensionValues || null,
+        quantityRowBacked: Boolean(panel.quantityRowBacked),
       })),
       beamMarks: beamMarksForOutput.length,
       reviewMarks: reference.reviewMarks?.length || 0,
@@ -9022,6 +9373,7 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
         slabSeedEntities: slabSeedEntities.length,
         panelClosedPolylines: panelPolylineCount,
         panelDimensionLabels: panelDimensionCount,
+        autoSlabPanelCreationDisabled: !SLAB_AUTO_PANEL_CREATION_ENABLED,
         referenceDrawingRules: REFERENCE_DRAWING_RULES,
         generatedSlabPanelMarksSuppressed: true,
         fastSlabPanelReference: Boolean(options.fastSlabPanelReference),
@@ -9073,7 +9425,7 @@ async function createSlabMarkReviewReferenceDrawing(entityPath, fileName, tempDi
       referenceType,
       warning: [
         conversionWarning,
-        `Full slab P-panel closure was skipped in fast extraction because ${Number(options.sourceEntityCount || 0)} CAD entities exceed the fast-mode limit. RP review marks are disabled; no final quantity was released.`,
+        `Full slab boundary verification was skipped in fast extraction because ${Number(options.sourceEntityCount || 0)} CAD entities exceed the fast-mode limit. No final quantity was released.`,
       ].filter(Boolean).join(" "),
       panelMarks: 0,
       panelMarksData: [],
@@ -9863,6 +10215,24 @@ function percent(value) {
   return Math.round(Number(value || 0) * 1000) / 10;
 }
 
+function rowHasWrittenCadPanelDimensions(row = {}) {
+  const evidence = row.evidence || {};
+  const sourceText = [
+    row.source,
+    evidence.source,
+    evidence.boundaryBasis,
+    evidence.selectedPanelMeasurementBasis,
+    evidence.lengthBasis,
+    evidence.breadthBasis,
+    evidence.dimensionBasis,
+    evidence.panelSourceRule,
+    evidence.writtenDimensionPanel ? "written-cad-dimension-panel" : "",
+  ].filter(Boolean).join(" ");
+  return /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|cad-dimension/i.test(sourceText) &&
+    Number(row.length) > 0 &&
+    Number(row.breadth) > 0;
+}
+
 function buildAccuracyAudit({ itemType, plans, extractedRows, rows }) {
   const measuredPlans = plans.filter((plan) => !plan.summary?.linkedDetailOnly);
   const references = measuredPlans
@@ -9880,6 +10250,9 @@ function buildAccuracyAudit({ itemType, plans, extractedRows, rows }) {
   const unresolvedSlabMarkCount = measuredPlans.reduce((sum, plan) => sum + Number(plan.summary?.unresolvedSlabMarkCount || 0), 0);
   const reviewRows = extractedRows.filter((row) => row.needsReview).length;
   const acceptedRows = rows.length;
+  const writtenCadPanelRows = (itemType === "slab" || itemType === "raft")
+    ? extractedRows.filter(rowHasWrittenCadPanelDimensions).length
+    : 0;
   const extractedCount = extractedRows.length;
   const reviewRatio = extractedCount ? reviewRows / extractedCount : 1;
   const acceptedRatio = extractedCount ? acceptedRows / extractedCount : 0;
@@ -9894,14 +10267,14 @@ function buildAccuracyAudit({ itemType, plans, extractedRows, rows }) {
   if (!references.length || references.some((reference) => !reference.ok)) {
     warnings.push("Reference working drawing was not created for every measured file.");
   }
-  if ((itemType === "slab" || itemType === "raft") && !panelMarks) {
-    warnings.push("No P-panel marks were created; slab quantity cannot be treated as final.");
+  if ((itemType === "slab" || itemType === "raft") && !panelMarks && !writtenCadPanelRows) {
+    warnings.push("No verified slab quantity panels were created. Slab marks such as S1/S2/S10 define thickness only; they are not used to auto-create slab area.");
   }
-  if ((itemType === "slab" || itemType === "raft") && panelMarks && panelCoverageRatio < 0.9) {
-    warnings.push(`Only ${percent(panelCoverageRatio)}% of P-panel marks reached final quantity rows.`);
+  if ((itemType === "slab" || itemType === "raft") && panelMarks && panelCoverageRatio < 0.9 && !writtenCadPanelRows) {
+    warnings.push(`Only ${percent(panelCoverageRatio)}% of verified slab labels reached final quantity rows.`);
   }
-  if ((itemType === "slab" || itemType === "raft") && unresolvedSlabMarkCount > 0) {
-    warnings.push(`${unresolvedSlabMarkCount} slab mark(s) did not resolve into verified P-panel quantity rows.`);
+  if ((itemType === "slab" || itemType === "raft") && unresolvedSlabMarkCount > 0 && !writtenCadPanelRows) {
+    warnings.push(`${unresolvedSlabMarkCount} slab mark(s) did not resolve into verified slab quantity rows.`);
   }
   if (itemType === "beam" && beamMarks && qbCoverageRatio < 0.85) {
     warnings.push(`Only ${percent(qbCoverageRatio)}% of QB beam marks reached final quantity rows.`);
@@ -9910,7 +10283,7 @@ function buildAccuracyAudit({ itemType, plans, extractedRows, rows }) {
     warnings.push("Beam quantity came from auto/topology fallback instead of fully verified beam-number extraction; treat it as review-only until the reference drawing is checked.");
   }
   if ((itemType === "slab" || itemType === "raft") && routes.some((route) => /topology_fallback/.test(route))) {
-    warnings.push("Slab quantity came from topology fallback; it is locked unless CAD P-line/beam-boundary read-back confirms full panel coverage.");
+    warnings.push("Slab quantity came from topology fallback; it is locked unless written CAD dimensions or verified beam-boundary read-back confirms full panel coverage.");
   }
   if (reviewRatio > 0.1) {
     warnings.push(`${percent(reviewRatio)}% of extracted rows need review; review quantity is included in total but must be checked before final billing.`);
@@ -9927,6 +10300,7 @@ function buildAccuracyAudit({ itemType, plans, extractedRows, rows }) {
     routes,
     sourceFiles: measuredPlans.map((plan) => plan.fileName),
     panelMarks,
+    writtenCadPanelRows,
     slabMarkCount,
     unresolvedSlabMarkCount,
     beamMarks,
@@ -9968,8 +10342,10 @@ function severeFramingQuantityLockReason({ itemType, summary, rows, plans = [] }
   const reviewPanelRows = rows.filter((row) => row.evidence?.reviewQuantityFromBlockedSlab).length;
   const reviewPanelRowsWithBoundaryEvidence = rows.filter((row) =>
     row.evidence?.reviewQuantityFromBlockedSlab &&
-    /nearest-surrounding-boundaries|p-line|closed|barrier|enclosure|verified/i.test(String(row.evidence?.boundaryBasis || row.source || "")),
+    /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|verified/i.test(String(row.evidence?.boundaryBasis || row.source || "")),
   ).length;
+  const writtenCadPanelRows = rows.filter(rowHasWrittenCadPanelDimensions).length;
+  const hasWrittenCadPanelQuantity = writtenCadPanelRows > 0 && netArea > 0;
   const hasReviewPanelCoverage = reviewPanelRows >= Math.max(4, acceptedRows * 0.75) &&
     reviewPanelRowsWithBoundaryEvidence >= Math.max(4, reviewPanelRows * 0.5) &&
     netArea >= Math.max(25, Math.min(120, Math.max(slabMarkCount, panelMarks) * 1.5));
@@ -9981,8 +10357,8 @@ function severeFramingQuantityLockReason({ itemType, summary, rows, plans = [] }
       row.evidence?.selectedPanelMeasurementBasis,
       row.evidence?.pLineReadbackRule,
     ].filter(Boolean).join(" ");
-    return !/topology|takeoff-engine-v2|planar-face-walk/i.test(sourceText) &&
-      /p-?line|closed polyline|dxf-slab|barrier-cell|enclosure-candidate|verified-slab/i.test(sourceText);
+    return !/topology|takeoff-engine-v2|planar-face-walk|barrier-cell|enclosure-candidate|grid|open-bay|slab-mark/i.test(sourceText) &&
+      /p-?line|closed polyline|verified-slab|written-cad-dimension/i.test(sourceText);
   }).length;
   const reasons = [];
 
@@ -9990,36 +10366,38 @@ function severeFramingQuantityLockReason({ itemType, summary, rows, plans = [] }
     const names = conversionFailedPlans.map((plan) => plan.fileName).filter(Boolean).join(", ");
     reasons.push(`no readable CAD geometry was created from ${names || "the uploaded DWG"}`);
   }
-  if (!panelMarks) {
-    reasons.push("no verified P-panel marks were created on the reference drawing");
+  if (!panelMarks && !hasWrittenCadPanelQuantity) {
+    reasons.push(slabMarkCount
+      ? "slab marks were found, but no verified slab quantity boundary or written dimension pair was created around them"
+      : "no verified slab quantity panels were created");
   }
-  if (panelMarks && panelCoverageRatio < 0.75) {
-    reasons.push(`only ${percent(panelCoverageRatio)}% of P-panel marks reached quantity rows`);
+  if (panelMarks && panelCoverageRatio < 0.75 && !hasWrittenCadPanelQuantity) {
+    reasons.push(`only ${percent(panelCoverageRatio)}% of verified slab labels reached quantity rows`);
   }
   if (extractedRows && reviewRatio > 0.5 && !hasReviewPanelCoverage) {
     reasons.push(`${percent(reviewRatio)}% of slab rows need review`);
   }
-  if (slabMarkCount && unresolvedSlabMarkCount > Math.max(2, slabMarkCount * 0.2)) {
+  if (slabMarkCount && unresolvedSlabMarkCount > Math.max(2, slabMarkCount * 0.2) && !hasWrittenCadPanelQuantity) {
     reasons.push(`${unresolvedSlabMarkCount} slab mark(s) did not resolve into measured panels`);
   }
-  if (slabMarkCount >= 8 && netArea < Math.max(120, slabMarkCount * 4)) {
+  if (slabMarkCount >= 8 && netArea < Math.max(120, slabMarkCount * 4) && !hasWrittenCadPanelQuantity) {
     reasons.push(`measured slab area ${round3(netArea)} sqm is too small for ${slabMarkCount} slab mark(s)`);
   }
-  if (acceptedRows <= 12 && netArea < 75 && (slabMarkCount >= 8 || largestRegionAreaM2 > 300)) {
+  if (acceptedRows <= 12 && netArea < 75 && (slabMarkCount >= 8 || largestRegionAreaM2 > 300) && !hasWrittenCadPanelQuantity) {
     reasons.push(`measured slab area ${round3(netArea)} sqm from only ${acceptedRows} panel(s) is a likely local/false panel cluster`);
   }
-  if (largestRegionAreaM2 > 500 && netArea < Math.max(100, largestRegionAreaM2 * 0.08) && !hasReviewPanelCoverage) {
+  if (largestRegionAreaM2 > 500 && netArea < Math.max(100, largestRegionAreaM2 * 0.08) && !hasReviewPanelCoverage && !hasWrittenCadPanelQuantity) {
     reasons.push(`measured slab area ${round3(netArea)} sqm is too small for the detected framing region`);
   }
-  if ((acceptedRows <= 2 && netArea < 25) || (falsePanelRoute && !hasReviewPanelCoverage)) {
+  if (((acceptedRows <= 2 && netArea < 25) || (falsePanelRoute && !hasReviewPanelCoverage)) && !hasWrittenCadPanelQuantity) {
     reasons.push("the fast/deep slab reader detected a small or false closed panel instead of the full floor");
   }
   if (topologySlabRoute && trustedCadPanelRows < Math.max(4, acceptedRows * 0.5)) {
-    reasons.push("topology-only slab panels were not confirmed by CAD P-line or beam-boundary read-back");
+    reasons.push("topology-only slab panels were not confirmed by written CAD dimensions or verified beam-boundary read-back");
   }
 
   if (!reasons.length) return "";
-  return `Slab quantity locked: ${reasons.join("; ")}. Final total/MB is not released because this would give a wrong quantity; review Excel may be downloaded for checking only. Use/recheck the reference drawing P-panel closure first.`;
+  return `Slab quantity locked: ${reasons.join("; ")}. Final total/MB is not released because this would give a wrong quantity; review Excel may be downloaded for checking only. Check the reference drawing and written dimensions first.`;
 }
 
 function createFramingDownloadPackage({ files, rows, itemType, quantityRule, beamCapMode = "included", plans, summary }) {
@@ -10080,9 +10458,9 @@ function createFramingDownloadPackage({ files, rows, itemType, quantityRule, bea
     note: markedReference
       ? rows.length
         ? finalAllowed
-          ? "Downloads generated from the current extraction. Reference drawing contains QSS P-panel marks and closed slab panel polylines. QB marks are added only for unnamed beams."
-          : "Review Excel generated from the current extraction. It is for checking only; final MB remains locked until P-panel/cutout rules pass."
-        : "Reference drawing generated for review only. MB Excel is locked until P-panel coverage and slab rules pass."
+          ? "Downloads generated from the current extraction. Reference drawing contains verified slab labels and QB marks only for unnamed beams."
+          : "Review Excel generated from the current extraction. It is for checking only; final MB remains locked until slab/cutout rules pass."
+        : "Reference drawing generated for review only. MB Excel is locked until slab coverage and slab rules pass."
       : allowSourceFallbackReference
         ? "Marked reference drawing could not be created; original source drawing is provided for review."
         : "Marked slab reference drawing could not be created; source drawing is not provided as a reference because it has no QSS panel marks.",
@@ -10267,12 +10645,10 @@ function finalQuantityRows(rows, itemType) {
       const scoreA = (a.needsReview ? 100000 : 0) +
         (a.evidence?.dimensionConflict ? 50000 : 0) +
         (markCountA === 1 ? -30000 : markCountA * 12000) +
-        (/p-line-closed-rectangle/i.test(basisA) ? -12000 : 0) +
         (/internal-split|centre-to-centre/i.test(basisA) ? 9000 : 0);
       const scoreB = (b.needsReview ? 100000 : 0) +
         (b.evidence?.dimensionConflict ? 50000 : 0) +
         (markCountB === 1 ? -30000 : markCountB * 12000) +
-        (/p-line-closed-rectangle/i.test(basisB) ? -12000 : 0) +
         (/internal-split|centre-to-centre/i.test(basisB) ? 9000 : 0);
       if (scoreA !== scoreB) return scoreA - scoreB;
       const areaA = Number(a.length || 0) * Number(a.breadth || 0);
@@ -10323,7 +10699,7 @@ function finalQuantityRows(rows, itemType) {
           ...(selected.evidence || {}),
           suppressedOverlappingPanelDetections: collapsedPanels,
           suppressedOverlappingPanelCount: group.length - 1,
-          panelCenterlineAndOverlapRule: "Final slab schedule keeps one row per physical bounded panel; duplicate/contained panel boxes are suppressed before Excel and reference drawing numbering.",
+          panelCenterlineAndOverlapRule: "Final slab schedule keeps one row per physical bounded panel; duplicate/contained panel detections are suppressed before Excel and reference drawing numbering.",
         },
       };
     });
@@ -11595,15 +11971,25 @@ process.on("unhandledRejection", (error) => {
   console.error("[QSS Pro] Unhandled promise rejection", error?.stack || error);
 });
 
+const port = Number(process.env.PORT || 4175);
+
 process.on("uncaughtException", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.log(`QSS Pro is already running at http://127.0.0.1:${port}/`);
+    process.exit(0);
+    return;
+  }
   console.error("[QSS Pro] Uncaught exception", error?.stack || error);
-  if (error?.code === "EADDRINUSE") process.exit(1);
 });
 
-const port = Number(process.env.PORT || 4175);
 server.on("error", (error) => {
+  if (error?.code === "EADDRINUSE") {
+    console.log(`QSS Pro is already running at http://127.0.0.1:${port}/`);
+    process.exit(0);
+    return;
+  }
   console.error("[QSS Pro] Server failed to start", error?.stack || error);
-  process.exit(error?.code === "EADDRINUSE" ? 1 : 2);
+  process.exit(2);
 });
 
 server.listen(port, "127.0.0.1", () => {

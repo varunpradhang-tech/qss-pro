@@ -557,16 +557,16 @@ function lockedReviewReferenceHasMarks(downloads = state.currentDownloads) {
 function compactQuantityLockMessage(message = state.framingQuantityLockReason) {
   const text = String(message || "").trim();
   if (!text) return "No verified quantity rows found.";
-  const coverage = text.match(/only\s+([\d.]+)%\s+of\s+P-panel/i)?.[1];
+  const coverage = text.match(/only\s+([\d.]+)%\s+of\s+verified slab panel/i)?.[1];
   const area = text.match(/measured slab area\s+([\d.]+)\s*sqm/i)?.[1];
   const review = text.match(/([\d.]+)%\s+of\s+slab rows need review/i)?.[1];
-  if (/Slab quantity locked|P-panel|false closed panel|full floor/i.test(text)) {
+  if (/Slab quantity locked|verified slab panel|false closed panel|full floor|written dimensions/i.test(text)) {
     return [
       "Final slab quantity not released.",
       coverage ? `Panel coverage: ${coverage}%.` : "",
       review ? `Review rows: ${review}%.` : "",
       area ? `Measured review area: ${area} sqm.` : "",
-      "Download the review reference drawing and check missing/false P-panel closure."
+      "Check the reference drawing and written panel dimensions before using this quantity."
     ].filter(Boolean).join(" ");
   }
   return text.length > 360 ? `${text.slice(0, 360)}...` : text;
@@ -631,15 +631,15 @@ function syncPremiumDownloads() {
   if (elements.premiumDownloadStatus) {
     const markCount = referenceMarkCount(downloads);
     elements.premiumDownloadStatus.textContent = lockedReviewReferenceReady && !excelReady
-      ? `Review reference drawing ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${markCount} review mark(s). Excel is locked until quantity rules pass.`
+      ? `Review reference drawing ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${markCount} review label(s). Excel is locked until quantity rules pass.`
       : !premium
       ? "Premium required to download Excel and reference drawing."
       : ready
-        ? `${downloads.finalAllowed ? "Final package" : "Review package"} ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${downloads.panelMarks || 0} slab panel mark(s).${downloads.reviewExcel ? " Excel is for checking only; final MB is still locked." : ""}`
+        ? `${downloads.finalAllowed ? "Final package" : "Review package"} ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${downloads.panelMarks || 0} slab panel label(s).${downloads.reviewExcel ? " Excel is for checking only; final MB is still locked." : ""}`
         : referenceReady
           ? Number(downloads.panelMarks || 0) > 0
-            ? `Reference drawing ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${downloads.panelMarks || 0} slab panel mark(s). Excel is locked until quantity rules pass.`
-            : `Reference drawing created but no P-panel marks were inserted. Excel is locked; slab boundary reader did not verify panels.`
+            ? `Reference drawing ready from ${downloads.referenceSourceFile || "uploaded drawing"} with ${downloads.panelMarks || 0} slab panel label(s). Excel is locked until quantity rules pass.`
+            : `Reference drawing created but no verified slab quantity rows were created. Excel is locked.`
         : "Extract quantity to generate current Excel and reference drawing.";
   }
 }
@@ -1211,7 +1211,8 @@ function startExtractionProgress(message) {
         : extractionProgressPercent < 88
           ? 0.8
           : 0.25;
-    setExtractionProgress(Math.min(94, extractionProgressPercent + increment));
+    const nextProgress = Math.min(88, extractionProgressPercent + increment);
+    setExtractionProgress(nextProgress, nextProgress >= 88 ? "Waiting for CAD reader result; final quantity is not confirmed yet." : "");
   }, 900);
 }
 
@@ -1342,7 +1343,7 @@ async function extractFramingQuantities() {
     !(data.rows || []).length &&
     /Slab extraction blocked|false closed panel|Fast extraction skipped whole-drawing topology fallback/i.test(fastWarnings);
   if (shouldRetryDeepSlab) {
-    updateExtractionProgress(62, "Fast slab read failed P-panel coverage. Trying deep slab topology once.");
+    updateExtractionProgress(62, "Fast slab read could not verify slab quantity rows. Trying deep slab topology once.");
     const deepData = await postJson(
       "/api/extract-framing-quantities",
       { ...basePayload, extractionProfile: "deep" },
@@ -1878,7 +1879,7 @@ function renderAccuracyAudit() {
       <span>${escapeHtml((ruleAudit?.routes || audit?.routes || []).join(", ") || "route not reported")}</span>
     </div>
     <div class="audit-grid">
-      <span><b>${Number(audit?.panelMarks || 0)}</b> P panels${Number(audit?.reviewMarks || 0) ? ` / ${Number(audit.reviewMarks)} review marks` : ""}</span>
+      <span><b>${Number(audit?.panelMarks || 0)}</b> slab panels${Number(audit?.reviewMarks || 0) ? ` / ${Number(audit.reviewMarks)} items need review` : ""}</span>
       <span><b>${Number(audit?.beamMarks || 0)}</b> QB marks</span>
       <span><b>${Number(audit?.acceptedRows || 0)}</b> accepted rows</span>
       <span><b>${Number(audit?.excludedRows || 0)}</b> excluded/review</span>

@@ -225,7 +225,7 @@
       "status": "coded-audited",
       "summary": "A slab panel is the area bounded by beam faces, wall faces, column/support faces, and cutout/open-to-sky boundaries. Support-only rectangles and structural body strips are not slab panels.",
       "acceptance": [
-        "Every accepted slab row maps to one closed P-panel face.",
+        "Every accepted slab row maps to written CAD dimensions or a real verified closed slab boundary.",
         "Overlapping panels are not counted.",
         "False small closed panels are locked as review."
       ],
@@ -234,12 +234,12 @@
     {
       "id": "QSS-SLAB-002",
       "codeId": "slab_reference_polylines",
-      "title": "Reference drawing has closed P-panel polylines",
+      "title": "Reference drawing has verified slab panel evidence",
       "appliesTo": "slab",
       "status": "coded-audited",
       "summary": "Premium reference drawing must contain one closed polyline for each accepted slab panel, with P1/P2 labels placed inside the panel.",
       "acceptance": [
-        "P-panel marks and quantity rows have one-to-one read-back.",
+        "Slab panel marks and quantity rows have one-to-one read-back.",
         "Panel labels do not sit on beam/wall lines.",
         "Panel text size is scaled to drawing text and stays inside the panel."
       ],
@@ -275,7 +275,7 @@
     },
     {
       "id": "QSS-SLAB-005",
-      "title": "P-panel numbering order",
+      "title": "Slab panel numbering order",
       "appliesTo": "slab",
       "status": "documented-pending-full-code",
       "summary": "P panels must be numbered in a predictable top-left to top-right, row-by-row order within the measured framing region.",
@@ -333,7 +333,7 @@
       "summary": "Final quantity is locked when review ratio, panel coverage, evidence, or golden tests fail. Review quantity can be shown only as review, never as final billing quantity.",
       "acceptance": [
         "Review ratio above limit locks final quantity.",
-        "Low P-panel coverage locks slab quantity.",
+        "Low verified slab panel coverage locks slab quantity.",
         "The reason is shown to the user."
       ],
       "source": "User requirement to avoid wrong totals."
