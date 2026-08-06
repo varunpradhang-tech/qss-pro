@@ -4694,7 +4694,12 @@ function removeDetailLikeBeamRows(rows = []) {
     const lineDistance = Number(row.evidence?.lineDistanceMm || 0);
     const sizeDistance = Number(row.evidence?.sizeDistanceMm || 0);
     const length = Number(row.length || 0);
-    if (sizeDistance > 30000) return false;
+    // A far sizeDistance alone doesn't mean this row is detail/section content - a beam's
+    // size is typically labelled once per drawing and inherited by every other occurrence
+    // of the same name/size, so occurrences far from any size text are normal, not
+    // suspicious. Only treat far sizeDistance as a detail-like signal when no other row of
+    // this same beam ID/breadth/height combo already confirmed the size nearby.
+    if (sizeDistance > 30000 && !hasPrimaryPeer) return false;
     if (hasPrimaryPeer && lineDistance > 6500) return false;
     if (hasPrimaryPeer && lineDistance > 3500 && length < 0.75) return false;
     return true;
@@ -4975,11 +4980,24 @@ function collapseDominantNamedBeamRunRows(rows = []) {
       (primaryLength >= 1.2 && primaryLength >= secondLength * 2.5) ||
       (primaryLength >= 0.75 && primaryLength >= secondLength * 1.75)
     );
+    // A same-name row that looks "weak" only means it's an unreliable measurement of
+    // SOMETHING - it does not mean that something is a duplicate of the primary run. If its
+    // span sits at a clearly different location along the beam (no overlap, no small gap),
+    // it is a separate continuation segment the merge step failed to bridge, not detail/
+    // offset noise, and discarding it here would silently under-count the physical beam.
+    const primarySpan = beamSpanFromRow(primary);
+    const isNearPrimarySpan = (row) => {
+      const span = beamSpanFromRow(row);
+      if (!primarySpan || !span || span.orientation !== primarySpan.orientation) return true;
+      const typicalMm = Math.max(Number(row.breadth || 0), Number(row.height || 0), 0.45) * 1000;
+      return rowSpanGapMm(primarySpan, span) <= Math.max(2500, typicalMm * 4);
+    };
     const weakFragments = sorted.slice(1).filter((row) =>
-      row.needsReview ||
-      row.evidence?.markedFaceDimensionsIgnoredAsOffsets ||
-      /marked-inner-outer-face-dimensions|marked-dimension-label-recovery/i.test(String(row.evidence?.dimensionBasis || "")) ||
-      Number(row.evidence?.lineDistanceMm || 0) > 1000);
+      isNearPrimarySpan(row) && (
+        row.needsReview ||
+        row.evidence?.markedFaceDimensionsIgnoredAsOffsets ||
+        /marked-inner-outer-face-dimensions|marked-dimension-label-recovery/i.test(String(row.evidence?.dimensionBasis || "")) ||
+        Number(row.evidence?.lineDistanceMm || 0) > 1000));
     if (hasDominantPrimaryRun && weakFragments.length >= sorted.length - 1) {
       kept.push({
         ...primary,
