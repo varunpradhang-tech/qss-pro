@@ -5056,7 +5056,12 @@ function collapseSameNamePhysicalOccurrenceRows(rows = []) {
     const gap = finiteMin(cluster.items.map((entry) => rowSpanGapMm(entry.span, span)), Infinity);
     const sameAxisLimitMm = Math.max(900, Math.min(2800, typicalMm * 4));
     const sameAxisGapLimitMm = Math.max(8000, Math.min(18000, typicalMm * 24));
-    const supportOffsetAxisLimitMm = Math.max(3500, Math.min(6500, typicalMm * 10));
+    // A genuine "same beam, centerline shifted at a support" offset is on the order of the
+    // member's own width/depth, not several metres - the previous typicalMm*10 (up to 6500mm)
+    // formula was wide enough to cluster two entirely separate, parallel physical beams
+    // (e.g. mirrored members several metres apart with the same mark) into one, which then
+    // got unioned down to a single beam's length instead of summing both.
+    const supportOffsetAxisLimitMm = Math.max(900, Math.min(2200, typicalMm * 3));
     return (
       (axisDiff <= sameAxisLimitMm && gap <= sameAxisGapLimitMm) ||
       (axisDiff <= supportOffsetAxisLimitMm && gap <= 1500)
