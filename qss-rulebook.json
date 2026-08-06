@@ -325,6 +325,21 @@
       "source": "User rule about ignoring column/wall offsets where panel is rectangular."
     },
     {
+      "id": "QSS-BBS-001",
+      "codeId": "steel_bbs_excel_format",
+      "title": "Steel quantity exports as BBS",
+      "appliesTo": "all",
+      "status": "coded-audited",
+      "summary": "Steel takeoff must export in bar bending schedule format, not as panel area or member area multiplied as steel weight.",
+      "acceptance": [
+        "Slab steel rows use panel/member headings followed by bottom, top, curtailed, and distribution bar rows.",
+        "Beam steel rows use beam/member headings followed by main, extra, stirrup, link, and SFR rows.",
+        "BBS columns include shape, item count, dia, spacing, dimensions A-E, bends, lap, bar count, cutting length, total length by dia, and remarks.",
+        "Steel weight is calculated from total bar length by dia using d^2/162 kg per metre."
+      ],
+      "source": "User provided slab and beam BBS reference formats."
+    },
+    {
       "id": "QSS-QA-001",
       "codeId": "review_gate",
       "title": "Final quantity review gate",
