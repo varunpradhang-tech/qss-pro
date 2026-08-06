@@ -357,9 +357,10 @@ function textPoint(item) {
 }
 
 function extractSlabThicknessInfo(textEntities) {
-  const slabMarks = textEntities
+  const nonXrefTextEntities = textEntities.filter((item) => !isXrefSourcedEntity(item));
+  const slabMarks = nonXrefTextEntities
     .filter((item) => /^S\d+[A-Z]?$/.test(item.text) && Number.isFinite(item.x) && Number.isFinite(item.y));
-  const defaultNoteSpecs = textEntities
+  const defaultNoteSpecs = nonXrefTextEntities
     .map((item) => {
       const text = String(item.text || "").toUpperCase();
       const unoPattern = "(?:U\\.?N\\.?O\\.?|UNO|U\\/N|UNLESS\\s+NOTED\\s+OTHERWISE)";
@@ -378,7 +379,7 @@ function extractSlabThicknessInfo(textEntities) {
     .filter(Boolean);
   const defaultNote = defaultNoteSpecs[0] || null;
   const noteSpecs = {};
-  for (const item of textEntities) {
+  for (const item of nonXrefTextEntities) {
     const text = String(item.text || "").toUpperCase();
     const matches = [...text.matchAll(/\b(S\d+[A-Z]?)\b\s*(?:=|:|-|\/|\\s)?\s*(\d{2,3})\s*(?:MM|THK|THICK|SLAB)?/g)];
     for (const match of matches) {
@@ -395,8 +396,8 @@ function extractSlabThicknessInfo(textEntities) {
       };
     }
   }
-  const tableMarkTexts = textEntities.filter((item) => /^S\d+[A-Z]?$/.test(item.text));
-  const tableThicknessTexts = textEntities
+  const tableMarkTexts = nonXrefTextEntities.filter((item) => /^S\d+[A-Z]?$/.test(item.text));
+  const tableThicknessTexts = nonXrefTextEntities
     .map((item) => {
       const value = Number(item.text.match(/^(\d{2,3})$/)?.[1] || 0);
       return { ...item, value };
@@ -424,7 +425,7 @@ function extractSlabThicknessInfo(textEntities) {
       };
     }
   }
-  const thicknessTexts = textEntities
+  const thicknessTexts = nonXrefTextEntities
     .map((item) => {
       const exact = item.text.match(/^(\d{2,3})$/);
       const thk = item.text.match(/\b(\d{2,3})\s*(?:mm)?\s*(?:THK|THICK|SLAB)\b/i);
@@ -1014,7 +1015,7 @@ function dimensionTextPoint(dimension = {}) {
   return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
 }
 
-function dimensionEvidenceBounds(dimension = {}) {
+function singleDimensionEvidenceBounds(dimension = {}) {
   const points = [
     { x: dimensionPointNumber(dimension.x1), y: dimensionPointNumber(dimension.y1) },
     { x: dimensionPointNumber(dimension.x2), y: dimensionPointNumber(dimension.y2) },
@@ -1038,7 +1039,7 @@ function dimensionEvidenceBounds(dimensions = []) {
 
 function dimensionEvidenceInsideRegion(dimension = {}, region = null, marginMm = 2500) {
   if (!region) return true;
-  const bounds = dimensionEvidenceBounds(dimension);
+  const bounds = singleDimensionEvidenceBounds(dimension);
   if (!bounds) return false;
   return boxesOverlap(bounds, region, marginMm);
 }
@@ -1506,9 +1507,18 @@ function pointInsideBox(point, box, margin = 0) {
     point.y <= box.maxY + margin;
 }
 
+function isXrefSourcedEntity(entity) {
+  const looksXrefBound = (value) => {
+    const text = String(value || "");
+    return /\$\d+\$/.test(text) || /^X[A-Za-z]/.test(text);
+  };
+  return looksXrefBound(entity?.sourceBlock) || looksXrefBound(entity?.layer);
+}
+
 function nonPrimaryDetailZones(textEntities = []) {
   const detailTitlePattern = /\b(?:SLAB\s+PROFILE|PROFILE|BEAM\s+DETAIL|BEAM\s+SCHEDULE|SECTION|DETAIL|BBS|BAR\s+BENDING|REINFORCEMENT|STEEL\s+DETAIL|COLUMN\s+SCHEDULE)\b/i;
   return textEntities
+    .filter((item) => !isXrefSourcedEntity(item))
     .filter((item) => detailTitlePattern.test(item.text || "") && !/\bFRAMING\s+PLAN\b/i.test(item.text || ""))
     .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y))
     .map((item) => ({
@@ -1542,6 +1552,7 @@ function textRegionStats(textEntities = [], region) {
 function inferFramingPlanRegion(entities, slabInfo) {
   const allText = entities
     .filter((item) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(item.type) && item.text)
+    .filter((item) => !isXrefSourcedEntity(item))
     .map((item) => ({ ...item, text: cleanCadText(item.text) }))
     .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y));
   const detailZones = nonPrimaryDetailZones(allText);

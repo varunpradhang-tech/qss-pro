@@ -133,8 +133,13 @@ function lineRecord(entity) {
   };
 }
 
-function isXrefSourceBlock(sourceBlock) {
-  return /^X[A-Za-z]/.test(String(sourceBlock || ""));
+function looksXrefBound(value) {
+  const text = String(value || "");
+  return /\$\d+\$/.test(text) || /^X[A-Za-z]/.test(text);
+}
+
+function isXrefEntity(entity) {
+  return looksXrefBound(entity?.sourceBlock) || looksXrefBound(entity?.layer);
 }
 
 function isHorizontal(entity, toleranceRatio = 0.03) {
@@ -203,7 +208,7 @@ function buildGridRegistry(entities, options = {}) {
   const rows = primary.rows;
   const lineEntities = entities
     .filter((entity) => entity.type === "LINE" && Number.isFinite(entity.x) && Number.isFinite(entity.y) && Number.isFinite(entity.x2) && Number.isFinite(entity.y2))
-    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
+    .filter((entity) => !isXrefEntity(entity))
     .filter((entity) => /GRID/i.test(entity.layer || "") || /CENTER/i.test(entity.lineType || ""))
     .filter((entity) => lineLength(entity) >= Number(options.minGridLineLengthMm || 1000));
 
@@ -284,7 +289,7 @@ function extractBoundarySegments(entities) {
       const hasParallelBeamMate = currentLine ? parallelBeamMate(currentLine, lineRowIndexByOrientation) : false;
       const gridLike = isGridLikeLine(entity);
       const nonStructuralLayer = /NON[\s\-_]*STR/i.test(layer);
-      const xrefSourced = isXrefSourceBlock(entity.sourceBlock);
+      const xrefSourced = isXrefEntity(entity);
       let type = "other";
       if (nonStructuralLayer || xrefSourced) type = "other";
       else if (/BEAM|POD\s*BEAM|ROOF\s*BEAM/.test(layer)) type = "beam_face";
@@ -315,10 +320,11 @@ function extractSupportBoxes(entities) {
     .filter((entity) => ["LWPOLYLINE", "POLYLINE", "HATCH"].includes(entity.type) && entity.vertices?.length >= 4)
     .map((entity) => ({ entity, box: entityBox(entity), layer: normalizeLayer(entity.layer) }))
     .filter(({ box }) => boxArea(box) >= 0.04e6)
+    .filter(({ box }) => (box.maxX - box.minX) <= 80000 && (box.maxY - box.minY) <= 80000)
     .filter(({ entity, box, layer }) => {
       if (/QSS_|PANEL|GRID|DIM|TEXT|CUT\s*OUT|CUTOUT|VOID|BEAM/.test(layer)) return false;
       if (/NON[\s\-_]*STR/i.test(layer)) return false;
-      if (isXrefSourceBlock(entity.sourceBlock)) return false;
+      if (isXrefEntity(entity)) return false;
       if (/COL|COLUMN|WALL|PARDI|LIFT|SHAFT/.test(layer)) return true;
       if (entity.type !== "HATCH") return false;
       const width = box.maxX - box.minX;
@@ -348,21 +354,22 @@ function extractSupportBoxes(entities) {
 function extractCutoutVoids(entities) {
   const cutoutTexts = entities
     .filter((entity) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(entity.type) && entity.text)
-    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
+    .filter((entity) => !isXrefEntity(entity))
     .map((entity) => ({ ...entity, clean: cleanCadText(entity.text).toUpperCase() }))
     .filter((entity) => /CUT\s*OUT|CUTOUT|OPEN\s*TO\s*SKY|\bOTS\b|SHAFT|VOID/.test(entity.clean));
 
   const cutoutBoxes = entities
     .filter((entity) => ["LWPOLYLINE", "POLYLINE", "HATCH"].includes(entity.type) && entity.vertices?.length >= 4)
-    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
+    .filter((entity) => !isXrefEntity(entity))
     .map((entity) => ({ entity, box: entityBox(entity), layer: normalizeLayer(entity.layer) }))
     .filter(({ box }) => boxArea(box) >= 0.02e6)
+    .filter(({ box }) => (box.maxX - box.minX) <= 80000 && (box.maxY - box.minY) <= 80000)
     .filter(({ layer }) => /CUT\s*OUT|CUTOUT|SHAFT|VOID/.test(layer))
     .map(({ entity, box }) => ({ type: "cutout_boundary", layer: entity.layer, box, areaSqm: boxArea(box) / 1e6 }));
 
   const diagonalLines = entities
     .filter((entity) => entity.type === "LINE" && Number.isFinite(entity.x) && Number.isFinite(entity.y) && Number.isFinite(entity.x2) && Number.isFinite(entity.y2))
-    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
+    .filter((entity) => !isXrefEntity(entity))
     .filter((entity) => {
       const dx = Math.abs(entity.x2 - entity.x);
       const dy = Math.abs(entity.y2 - entity.y);
