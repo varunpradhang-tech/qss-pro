@@ -133,6 +133,10 @@ function lineRecord(entity) {
   };
 }
 
+function isXrefSourceBlock(sourceBlock) {
+  return /^X[A-Za-z]/.test(String(sourceBlock || ""));
+}
+
 function isHorizontal(entity, toleranceRatio = 0.03) {
   return Math.abs((entity.y2 || 0) - (entity.y || 0)) <= Math.abs((entity.x2 || 0) - (entity.x || 0)) * toleranceRatio;
 }
@@ -199,6 +203,7 @@ function buildGridRegistry(entities, options = {}) {
   const rows = primary.rows;
   const lineEntities = entities
     .filter((entity) => entity.type === "LINE" && Number.isFinite(entity.x) && Number.isFinite(entity.y) && Number.isFinite(entity.x2) && Number.isFinite(entity.y2))
+    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
     .filter((entity) => /GRID/i.test(entity.layer || "") || /CENTER/i.test(entity.lineType || ""))
     .filter((entity) => lineLength(entity) >= Number(options.minGridLineLengthMm || 1000));
 
@@ -278,8 +283,11 @@ function extractBoundarySegments(entities) {
       const hasBeamText = currentLine ? hasBeamTextEvidenceNearLine(currentLine, beamTextIndexByOrientation) : false;
       const hasParallelBeamMate = currentLine ? parallelBeamMate(currentLine, lineRowIndexByOrientation) : false;
       const gridLike = isGridLikeLine(entity);
+      const nonStructuralLayer = /NON[\s\-_]*STR/i.test(layer);
+      const xrefSourced = isXrefSourceBlock(entity.sourceBlock);
       let type = "other";
-      if (/BEAM|POD\s*BEAM|ROOF\s*BEAM/.test(layer)) type = "beam_face";
+      if (nonStructuralLayer || xrefSourced) type = "other";
+      else if (/BEAM|POD\s*BEAM|ROOF\s*BEAM/.test(layer)) type = "beam_face";
       else if (/WALL|COL|COLUMN|PARDI/.test(layer)) type = "support_face";
       else if (/CUT\s*OUT|CUTOUT|SHAFT/.test(layer)) type = "cutout_boundary";
       else if (/GRID/.test(layer)) type = "grid_reference";
@@ -309,6 +317,8 @@ function extractSupportBoxes(entities) {
     .filter(({ box }) => boxArea(box) >= 0.04e6)
     .filter(({ entity, box, layer }) => {
       if (/QSS_|PANEL|GRID|DIM|TEXT|CUT\s*OUT|CUTOUT|VOID|BEAM/.test(layer)) return false;
+      if (/NON[\s\-_]*STR/i.test(layer)) return false;
+      if (isXrefSourceBlock(entity.sourceBlock)) return false;
       if (/COL|COLUMN|WALL|PARDI|LIFT|SHAFT/.test(layer)) return true;
       if (entity.type !== "HATCH") return false;
       const width = box.maxX - box.minX;
@@ -338,11 +348,13 @@ function extractSupportBoxes(entities) {
 function extractCutoutVoids(entities) {
   const cutoutTexts = entities
     .filter((entity) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(entity.type) && entity.text)
+    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
     .map((entity) => ({ ...entity, clean: cleanCadText(entity.text).toUpperCase() }))
     .filter((entity) => /CUT\s*OUT|CUTOUT|OPEN\s*TO\s*SKY|\bOTS\b|SHAFT|VOID/.test(entity.clean));
 
   const cutoutBoxes = entities
     .filter((entity) => ["LWPOLYLINE", "POLYLINE", "HATCH"].includes(entity.type) && entity.vertices?.length >= 4)
+    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
     .map((entity) => ({ entity, box: entityBox(entity), layer: normalizeLayer(entity.layer) }))
     .filter(({ box }) => boxArea(box) >= 0.02e6)
     .filter(({ layer }) => /CUT\s*OUT|CUTOUT|SHAFT|VOID/.test(layer))
@@ -350,6 +362,7 @@ function extractCutoutVoids(entities) {
 
   const diagonalLines = entities
     .filter((entity) => entity.type === "LINE" && Number.isFinite(entity.x) && Number.isFinite(entity.y) && Number.isFinite(entity.x2) && Number.isFinite(entity.y2))
+    .filter((entity) => !isXrefSourceBlock(entity.sourceBlock))
     .filter((entity) => {
       const dx = Math.abs(entity.x2 - entity.x);
       const dy = Math.abs(entity.y2 - entity.y);
