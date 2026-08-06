@@ -51,35 +51,70 @@ function isDashedBeamLine(entity) {
   return /HIDDEN|DASH|DOTTED|ACAD_ISO0?2|ACAD_ISO0?3/.test(lineType);
 }
 
-function axisDistanceToLine(text, line) {
-  return line.orientation === "H"
-    ? Math.abs(Number(text.y || 0) - line.fixed)
-    : Math.abs(Number(text.x || 0) - line.fixed);
-}
-
 function textAlongCoordinate(text, orientation) {
   return orientation === "H" ? Number(text.x || 0) : Number(text.y || 0);
 }
 
-function hasBeamTextEvidenceNearLine(line, beamTexts, options = {}) {
+function sortedIndexByKey(items, keyFn) {
+  const entries = items.map((item) => ({ item, key: keyFn(item) })).sort((a, b) => a.key - b.key);
+  return { items: entries.map((entry) => entry.item), keys: entries.map((entry) => entry.key) };
+}
+
+function lowerBoundKey(keys, target) {
+  let lo = 0;
+  let hi = keys.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (keys[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function upperBoundKey(keys, target) {
+  let lo = 0;
+  let hi = keys.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (keys[mid] <= target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function rangeQuery(index, minKey, maxKey) {
+  if (!index || !index.items.length || minKey > maxKey) return [];
+  return index.items.slice(lowerBoundKey(index.keys, minKey), upperBoundKey(index.keys, maxKey));
+}
+
+function buildOrientedIndex(items, axisValueFn) {
+  return {
+    H: sortedIndexByKey(items.filter((item) => item.orientation === "H"), axisValueFn),
+    V: sortedIndexByKey(items.filter((item) => item.orientation === "V"), axisValueFn),
+  };
+}
+
+function hasBeamTextEvidenceNearLine(line, beamTextIndexByOrientation, options = {}) {
   const axisToleranceMm = Number(options.axisToleranceMm || 1800);
   const alongToleranceMm = Number(options.alongToleranceMm || 2800);
-  return beamTexts.some((text) => {
-    if (text.orientation !== line.orientation) return false;
-    if (axisDistanceToLine(text, line) > axisToleranceMm) return false;
+  const candidates = rangeQuery(beamTextIndexByOrientation[line.orientation], line.fixed - axisToleranceMm, line.fixed + axisToleranceMm);
+  return candidates.some((text) => {
     const along = textAlongCoordinate(text, line.orientation);
     return along >= line.start - alongToleranceMm && along <= line.end + alongToleranceMm;
   });
 }
 
-function parallelBeamMate(line, lineRows, options = {}) {
+function parallelBeamMate(line, lineRowIndexByOrientation, options = {}) {
   const minBeamWidthMm = Number(options.minBeamWidthMm || 120);
   const maxBeamWidthMm = Number(options.maxBeamWidthMm || 1400);
   const minOverlapMm = Number(options.minOverlapMm || 450);
-  return lineRows.some((other) => {
-    if (other === line || other.orientation !== line.orientation) return false;
-    const faceDistance = Math.abs(other.fixed - line.fixed);
-    if (faceDistance < minBeamWidthMm || faceDistance > maxBeamWidthMm) return false;
+  const index = lineRowIndexByOrientation[line.orientation];
+  const candidates = [
+    ...rangeQuery(index, line.fixed - maxBeamWidthMm, line.fixed - minBeamWidthMm),
+    ...rangeQuery(index, line.fixed + minBeamWidthMm, line.fixed + maxBeamWidthMm),
+  ];
+  return candidates.some((other) => {
+    if (other === line) return false;
     const overlap = overlap1d(line.start, line.end, other.start, other.end);
     return overlap >= minOverlapMm;
   });
@@ -229,15 +264,19 @@ function extractBoundarySegments(entities) {
   const lineRows = lineEntities
     .map(lineRecord)
     .filter((line) => line.orientation === "H" || line.orientation === "V");
+  const lineRowByEntity = new Map(lineRows.map((line) => [line.entity, line]));
+  const beamTextIndexByOrientation = buildOrientedIndex(beamTexts, (text) =>
+    text.orientation === "H" ? Number(text.y || 0) : Number(text.x || 0));
+  const lineRowIndexByOrientation = buildOrientedIndex(lineRows, (line) => line.fixed);
 
   return lineEntities.map((entity) => {
       const layer = normalizeLayer(entity.layer);
       const horizontal = isHorizontal(entity, 0.05);
       const vertical = isVertical(entity, 0.05);
       const lineType = normalizedLineType(entity);
-      const currentLine = lineRows.find((line) => line.entity === entity);
-      const hasBeamText = currentLine ? hasBeamTextEvidenceNearLine(currentLine, beamTexts) : false;
-      const hasParallelBeamMate = currentLine ? parallelBeamMate(currentLine, lineRows) : false;
+      const currentLine = lineRowByEntity.get(entity);
+      const hasBeamText = currentLine ? hasBeamTextEvidenceNearLine(currentLine, beamTextIndexByOrientation) : false;
+      const hasParallelBeamMate = currentLine ? parallelBeamMate(currentLine, lineRowIndexByOrientation) : false;
       const gridLike = isGridLikeLine(entity);
       let type = "other";
       if (/BEAM|POD\s*BEAM|ROOF\s*BEAM/.test(layer)) type = "beam_face";

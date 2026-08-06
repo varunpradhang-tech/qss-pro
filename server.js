@@ -747,37 +747,54 @@ function extractCutoutsFromDxf(fileName, entities) {
     .filter((item) => item.lengthMm >= 500 && item.lengthMm <= 18000);
   const diagonalLines = lineItems.filter((line) => !isHorizontal(line) && !isVertical(line));
   const crossedVoidCutouts = [];
+  const crossedPairCellSizeMm = 15000;
+  const crossedPairCellIndex = (value) => Math.floor(value / crossedPairCellSizeMm);
+  const crossedPairBuckets = new Map();
+  diagonalLines.forEach((line, index) => {
+    const key = `${crossedPairCellIndex(line.minX)}:${crossedPairCellIndex(line.minY)}`;
+    if (!crossedPairBuckets.has(key)) crossedPairBuckets.set(key, []);
+    crossedPairBuckets.get(key).push(index);
+  });
   for (let first = 0; first < diagonalLines.length; first += 1) {
-    for (let second = first + 1; second < diagonalLines.length; second += 1) {
-      const a = diagonalLines[first];
-      const b = diagonalLines[second];
-      const box = {
-        minX: Math.min(a.minX, b.minX),
-        maxX: Math.max(a.maxX, b.maxX),
-        minY: Math.min(a.minY, b.minY),
-        maxY: Math.max(a.maxY, b.maxY),
-      };
-      const widthM = (box.maxX - box.minX) / 1000;
-      const heightM = (box.maxY - box.minY) / 1000;
-      const areaM2 = widthM * heightM;
-      if (widthM < 0.6 || heightM < 0.6 || widthM > 15 || heightM > 15 || areaM2 < 0.5 || areaM2 > 120) continue;
-      const oppositeSlope = ((a.x2 - a.x) * (b.x2 - b.x) + (a.y2 - a.y) * (b.y2 - b.y)) < 0;
-      if (!oppositeSlope) continue;
-      if (!isLikelyVoidXPair(a, b, box)) continue;
-      const centerX = (box.minX + box.maxX) / 2;
-      const centerY = (box.minY + box.maxY) / 2;
-      crossedVoidCutouts.push({
-        fileName,
-        layer: "X-cross/open-to-sky evidence",
-        areaM2,
-        lengthM: widthM,
-        breadthM: heightM,
-        centerX,
-        centerY,
-        ...box,
-        key: geometryKey([box.minX, box.maxX, box.minY, box.maxY], 100),
-        basis: "Diagonal X-crossed bay; treated as no slab/opening.",
-      });
+    const a = diagonalLines[first];
+    const baseCellX = crossedPairCellIndex(a.minX);
+    const baseCellY = crossedPairCellIndex(a.minY);
+    for (let cellDx = -1; cellDx <= 1; cellDx += 1) {
+      for (let cellDy = -1; cellDy <= 1; cellDy += 1) {
+        const neighbors = crossedPairBuckets.get(`${baseCellX + cellDx}:${baseCellY + cellDy}`);
+        if (!neighbors) continue;
+        for (const second of neighbors) {
+          if (second <= first) continue;
+          const b = diagonalLines[second];
+          const box = {
+            minX: Math.min(a.minX, b.minX),
+            maxX: Math.max(a.maxX, b.maxX),
+            minY: Math.min(a.minY, b.minY),
+            maxY: Math.max(a.maxY, b.maxY),
+          };
+          const widthM = (box.maxX - box.minX) / 1000;
+          const heightM = (box.maxY - box.minY) / 1000;
+          const areaM2 = widthM * heightM;
+          if (widthM < 0.6 || heightM < 0.6 || widthM > 15 || heightM > 15 || areaM2 < 0.5 || areaM2 > 120) continue;
+          const oppositeSlope = ((a.x2 - a.x) * (b.x2 - b.x) + (a.y2 - a.y) * (b.y2 - b.y)) < 0;
+          if (!oppositeSlope) continue;
+          if (!isLikelyVoidXPair(a, b, box)) continue;
+          const centerX = (box.minX + box.maxX) / 2;
+          const centerY = (box.minY + box.maxY) / 2;
+          crossedVoidCutouts.push({
+            fileName,
+            layer: "X-cross/open-to-sky evidence",
+            areaM2,
+            lengthM: widthM,
+            breadthM: heightM,
+            centerX,
+            centerY,
+            ...box,
+            key: geometryKey([box.minX, box.maxX, box.minY, box.maxY], 100),
+            basis: "Diagonal X-crossed bay; treated as no slab/opening.",
+          });
+        }
+      }
     }
   }
   const textVoidCutouts = openTexts.map((text) => {

@@ -190,12 +190,46 @@ function normalizeSegments(entities, options = {}) {
     .filter((segment) => segment.end - segment.start >= minSegmentLengthMm);
 }
 
+function sortedIndexByKey(items, keyFn) {
+  const entries = items.map((item) => ({ item, key: keyFn(item) })).sort((a, b) => a.key - b.key);
+  return { items: entries.map((entry) => entry.item), keys: entries.map((entry) => entry.key) };
+}
+
+function lowerBoundKey(keys, target) {
+  let lo = 0;
+  let hi = keys.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (keys[mid] < target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function upperBoundKey(keys, target) {
+  let lo = 0;
+  let hi = keys.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (keys[mid] <= target) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
+function rangeQuery(index, minKey, maxKey) {
+  if (!index.items.length || minKey > maxKey) return [];
+  return index.items.slice(lowerBoundKey(index.keys, minKey), upperBoundKey(index.keys, maxKey));
+}
+
 function buildElementaryEdges(segments, options = {}) {
   const splitToleranceMm = Number(options.splitToleranceMm || 80);
   const minEdgeLengthMm = Number(options.minEdgeLengthMm || 250);
   const maxEdges = Number(options.maxEdges || 35000);
   const horizontal = segments.filter((segment) => segment.orientation === "H");
   const vertical = segments.filter((segment) => segment.orientation === "V");
+  const horizontalByFixed = sortedIndexByKey(horizontal, (segment) => segment.fixed);
+  const verticalByFixed = sortedIndexByKey(vertical, (segment) => segment.fixed);
   const edgeMap = new Map();
 
   function addEdge(orientation, fixed, start, end, source) {
@@ -242,20 +276,17 @@ function buildElementaryEdges(segments, options = {}) {
     return clusters.map((cluster) => median(cluster)).sort((a, b) => a - b);
   }
 
-  function splitValuesFor(segment, perpendicular, collinear) {
+  function splitValuesFor(segment, perpendicularIndex, collinearIndex) {
     const values = [segment.start, segment.end];
-    for (const other of perpendicular) {
-      if (
-        other.fixed >= segment.start - splitToleranceMm &&
-        other.fixed <= segment.end + splitToleranceMm &&
-        segment.fixed >= other.start - splitToleranceMm &&
-        segment.fixed <= other.end + splitToleranceMm
-      ) {
+    const crossing = rangeQuery(perpendicularIndex, segment.start - splitToleranceMm, segment.end + splitToleranceMm);
+    for (const other of crossing) {
+      if (segment.fixed >= other.start - splitToleranceMm && segment.fixed <= other.end + splitToleranceMm) {
         values.push(other.fixed);
       }
     }
+    const collinear = rangeQuery(collinearIndex, segment.fixed - splitToleranceMm, segment.fixed + splitToleranceMm);
     for (const other of collinear) {
-      if (other === segment || Math.abs(other.fixed - segment.fixed) > splitToleranceMm) continue;
+      if (other === segment) continue;
       if (other.start > segment.start && other.start < segment.end) values.push(other.start);
       if (other.end > segment.start && other.end < segment.end) values.push(other.end);
     }
@@ -264,12 +295,12 @@ function buildElementaryEdges(segments, options = {}) {
 
   for (const segment of horizontal) {
     if (edgeMap.size >= maxEdges) break;
-    const values = splitValuesFor(segment, vertical, horizontal);
+    const values = splitValuesFor(segment, verticalByFixed, horizontalByFixed);
     for (let index = 0; index < values.length - 1; index += 1) addEdge("H", segment.fixed, values[index], values[index + 1], segment);
   }
   for (const segment of vertical) {
     if (edgeMap.size >= maxEdges) break;
-    const values = splitValuesFor(segment, horizontal, vertical);
+    const values = splitValuesFor(segment, horizontalByFixed, verticalByFixed);
     for (let index = 0; index < values.length - 1; index += 1) addEdge("V", segment.fixed, values[index], values[index + 1], segment);
   }
 
