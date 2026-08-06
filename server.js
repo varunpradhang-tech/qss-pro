@@ -5419,7 +5419,14 @@ function mergeContinuousNamedBeamRows(rows = []) {
       rowsToMerge.length >= 3 &&
       bridgeLengthM > totalLength * 1.08 &&
       bridgeLengthM <= Math.min(totalLength * 1.35, maxSafeBridgeLengthM);
-    const hasOverlapOrDuplicate = unionLengthM > 0 && unionLengthM < totalLength * 0.92;
+    // A small fragment fully contained inside a much longer span is still a duplicate even
+    // though it's a tiny fraction of the total sum (the ratio check below only catches large
+    // overlaps): if the union of all spans is no bigger than the single longest span among
+    // them, every other span added zero new coverage, so summing their lengths would double
+    // count real beam length that was already measured once.
+    const maxComponentLengthM = finiteMax(spans.map((span) => Math.abs(span.end - span.start) / 1000), 0);
+    const hasFullyContainedFragment = unionLengthM > 0 && unionLengthM <= maxComponentLengthM * 1.02;
+    const hasOverlapOrDuplicate = unionLengthM > 0 && (unionLengthM < totalLength * 0.92 || hasFullyContainedFragment);
     const mergedLength = shouldBridgeUnlabelledMiddle
       ? bridgeLengthM
       : hasOverlapOrDuplicate
