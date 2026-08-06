@@ -1339,7 +1339,7 @@ async function extractFramingQuantities() {
     ...(data.plans || []).map((plan) => plan.warning || ""),
     ...(data.summary?.routeWarnings || []),
   ].join(" ");
-  const shouldRetryDeepSlab = false && ["slab", "raft"].includes(itemType) &&
+  const shouldRetryDeepSlab = ["slab", "raft"].includes(itemType) &&
     !(data.rows || []).length &&
     /Slab extraction blocked|false closed panel|Fast extraction skipped whole-drawing topology fallback/i.test(fastWarnings);
   if (shouldRetryDeepSlab) {
