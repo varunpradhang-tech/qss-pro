@@ -1226,10 +1226,36 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
       markedDimensionFastRows = fastResult.rows;
       markedDimensionFastDiagnostics = fastResult.diagnostics;
     }
-    if (markedDimensionFastRows.length) {
+    const canRunDirectBeamExtractor = allowDeepFallback || entities.length <= FAST_TOPOLOGY_ENTITY_LIMIT;
+    if (canRunDirectBeamExtractor) {
+      // Direct paired-face geometry (QSS-BEAM-005) is the authoritative source; the
+      // marked-dimension fast path is a recovery fallback (see recoveredAfterDirectPairingFailed
+      // in its rows) and must never wholesale replace direct measurement just because it
+      // produced *some* rows - beams with no nearby marked dimension text would otherwise be
+      // silently dropped, and beams that do have nearby dimension text can pick up the wrong
+      // (too-small) value when several unrelated dimensions sit within its loose search window.
+      const directRows = extractBeamRowsFromDxf(file.name, role, entities, slabInfo, grid, beamSizeById);
+      const directDiagnostics = extractBeamRowsFromDxf.lastDiagnostics;
+      if (markedDimensionFastRows.length) {
+        const directIds = new Set(directRows.map((row) => beamRowMergeId(row)).filter(Boolean));
+        const supplementRows = markedDimensionFastRows.filter((row) => {
+          const id = beamRowMergeId(row);
+          return id && !directIds.has(id);
+        });
+        beamRows = directRows.concat(supplementRows);
+        extractBeamRowsFromDxf.lastDiagnostics = {
+          ...(directDiagnostics || {}),
+          markedDimensionFastPath: true,
+          markedDimensionSupplementRows: supplementRows.length,
+        };
+      } else {
+        beamRows = directRows;
+        extractBeamRowsFromDxf.lastDiagnostics = directDiagnostics;
+      }
+    } else if (markedDimensionFastRows.length) {
       beamRows = markedDimensionFastRows;
       extractBeamRowsFromDxf.lastDiagnostics = markedDimensionFastDiagnostics;
-    } else if (markedDimensionFastMode && !allowDeepFallback && entities.length > FAST_TOPOLOGY_ENTITY_LIMIT) {
+    } else {
       directBeamExtractorSkipped = `Marked-dimension fast path found ${markedDimensionEvidenceCount(grid)} CAD dimensions but could not create beam rows; skipped heavy direct beam-face pass because ${entities.length} filtered CAD entities exceed the ${FAST_TOPOLOGY_ENTITY_LIMIT} fast-mode limit.`;
       extractBeamRowsFromDxf.lastDiagnostics = {
         ...(markedDimensionFastDiagnostics || {}),
@@ -1240,8 +1266,6 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         beamLabels: localBeamLabelsFromTextEntities(textEntities).length,
         beamSizes: localBeamSizesFromTextEntities(textEntities, beamSizeById).length,
       };
-    } else {
-      beamRows = extractBeamRowsFromDxf(file.name, role, entities, slabInfo, grid, beamSizeById);
     }
   }
   const gridPanelRows = areaItem ? extractGridPanelRowsFromDxf(file.name, role, gridPanels, grid, slabInfo, cutouts) : [];

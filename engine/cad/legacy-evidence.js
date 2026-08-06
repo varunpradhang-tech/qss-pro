@@ -1256,15 +1256,26 @@ function chooseMeasuredDimension({ cadDimension, gridDimension, geometryMm, pref
     : geometry;
   const cadIsMarkedDimension = cadMm && /visible-dimension-text|text-dimension-label|actual-measurement/i.test(String(cadDimension?.valueSource || ""));
   const gridIsMarkedDimension = gridMm && /visible-dimension-text|text-dimension-label|actual-measurement/i.test(String(gridDimension?.valueSource || ""));
+  // A "marked"/"visible" dimension tag only means some CAD dimension entity's text was
+  // legible - it says nothing about whether that entity actually belongs to this span.
+  // Dimension-matching functions (cadDimensionForSpan, markedFaceDimensionsNearLabel, etc.)
+  // search a generous radius around a label/line and can attach an unrelated nearby
+  // dimension (a support/column width, an offset annotation) to this span. When the
+  // measured geometry disagrees with a "marked" value by more than 2x, that is a much
+  // stronger signal of a mismatched dimension than of a wrong geometry measurement, so it
+  // should not be trusted blindly ahead of geometry.
+  const cadWildlyDisagreesWithGeometry = cadMm > 0 && geometry > 0 && (cadMm < geometry * 0.5 || cadMm > geometry * 2);
+  const gridWildlyDisagreesWithGeometry = gridMm > 0 && geometry > 0 && (gridMm < geometry * 0.5 || gridMm > geometry * 2);
 
   let selected = values[0];
   if (cadGridAgree) selected = { source: "cad-grid-agree", valueMm: cadMm };
   else if (cadGeometryAgree) selected = { source: "cad-geometry-agree", valueMm: cadMm };
   else if (gridGeometryAgree) selected = { source: "grid-geometry-agree", valueMm: gridMm };
-  else if (cadIsMarkedDimension) selected = { source: "cad-dimension", valueMm: cadMm };
-  else if (gridIsMarkedDimension) selected = { source: "grid-dimension", valueMm: gridMm };
+  else if (cadIsMarkedDimension && !cadWildlyDisagreesWithGeometry) selected = { source: "cad-dimension", valueMm: cadMm };
+  else if (gridIsMarkedDimension && !gridWildlyDisagreesWithGeometry) selected = { source: "grid-dimension", valueMm: gridMm };
   else if (preferGeometryWhenCadExceeds && geometry && cadMm && cadMm > geometry && !cadIsMarkedDimension) selected = { source: "support-stopped-geometry", valueMm: geometry };
   else if (geometryLooksLikeDrawnDimension && cadMm && Math.abs(cadMm - geometry) > Math.max(150, geometry * 0.025)) selected = { source: "drawn-geometry-over-conflicting-cad-dimension", valueMm: snappedGeometryMm };
+  else if (geometry && (cadWildlyDisagreesWithGeometry || gridWildlyDisagreesWithGeometry)) selected = { source: "geometry-over-implausible-marked-dimension", valueMm: geometry };
   else if (cadMm) selected = { source: "cad-dimension", valueMm: cadMm };
   else if (gridMm) selected = { source: "grid-dimension", valueMm: gridMm };
   else selected = { source: "geometry", valueMm: geometry };

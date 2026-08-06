@@ -224,11 +224,25 @@ function recoverNamedBeamRowsFromMarkedDimensions({ fileName, role, beamLabels, 
     if (!(widthMm > 0 && depthMm > 0)) continue;
     const markedFaceDimensions = markedFaceDimensionsNearLabel(dimensions, label, orientation, widthMm);
     if (!markedFaceDimensions.length) continue;
-    const markedFaceValuesMm = markedFaceDimensions
+    const rawMarkedFaceValuesMm = markedFaceDimensions
       .map((dimension) => Number(dimension.valueMm || 0))
       .filter((value) => value > 0)
       .sort((a, b) => a - b);
-    if (!markedFaceValuesMm.length) continue;
+    if (!rawMarkedFaceValuesMm.length) continue;
+    // markedFaceDimensionsNearLabel's search window is intentionally generous (it has to
+    // find dimensions that may sit several metres from the label), which means it can
+    // return dimensions that have nothing to do with this beam's actual span (a nearby
+    // column/support width, an offset annotation, etc). Reject the whole candidate set
+    // for this label unless it passes the same plausibility check extractBeamRowsFromDxf
+    // already applies to its own geometry-based candidates (QSS-BEAM-005) - without this,
+    // a single spurious small value silently becomes the "bottom length" below.
+    if (!markedFaceDimensionsAreCredibleBeamRun(rawMarkedFaceValuesMm, 0, widthMm)) continue;
+    // Even when the set as a whole is credible (its largest value is plausible), a mix of
+    // one real span dimension and one unrelated small one can still slip through - drop any
+    // individual value too small to be a face-to-face beam span before picking min/max, so a
+    // spurious small value never becomes "bottomLengthMm" just because it sorted first.
+    const plausibleFaceValuesMm = rawMarkedFaceValuesMm.filter((value) => value >= Math.max(1200, widthMm * 3));
+    const markedFaceValuesMm = plausibleFaceValuesMm.length ? plausibleFaceValuesMm : rawMarkedFaceValuesMm;
     const hasTwoMarkedFaceLengths = markedFaceValuesMm.length >= 2 &&
       (markedFaceValuesMm[markedFaceValuesMm.length - 1] - markedFaceValuesMm[0]) > Math.max(50, widthMm * 0.5);
     const bottomLengthMm = hasTwoMarkedFaceLengths ? markedFaceValuesMm[0] : markedFaceValuesMm[0];
@@ -1517,32 +1531,44 @@ function extractUnmarkedBayWiseBeamRowsByMarkedPattern({ fileName, role, beamLab
 
 function preferUnmarkedBayPatternRows(baseRows = [], patternRows = []) {
   if (!patternRows.length) return baseRows;
-  const patternSpans = patternRows
-    .map((row) => ({ row, span: beamSpanFromRow(row), id: beamRowMergeId(row) }))
-    .filter((item) => item.id && item.span);
-  const coveredByPattern = (row) => {
+  // This bay-wise pattern extractor exists for beams that have no name/geometry evidence
+  // of their own (QSS-BEAM-006). It is fed every beam label including named ones, so it can
+  // also produce a row for a beam the direct geometry pass already measured - that must never
+  // evict the geometry row just because their spans happen to overlap: the direct pass is the
+  // authoritative source (QSS-BEAM-005) even when its measurement is only a partial/unmerged
+  // segment. beamRowMergeId only returns the beam name, not a location, and the same mark can
+  // legitimately label two or more separate physical beams elsewhere on the floor (mirrored
+  // members, repeated bays), so "this name already has a row" is not enough to skip a pattern
+  // row - only skip it when an existing base row of the same name is actually at the same
+  // location (same orientation, near axis, overlapping/adjacent span).
+  const baseSpansByName = new Map();
+  baseRows.forEach((row) => {
+    const id = beamRowMergeId(row);
+    const span = beamSpanFromRow(row);
+    if (!id || !span) return;
+    if (!baseSpansByName.has(id)) baseSpansByName.set(id, []);
+    baseSpansByName.get(id).push(span);
+  });
+  const alreadyMeasuredAtThisLocation = (row) => {
     const id = beamRowMergeId(row);
     const span = beamSpanFromRow(row);
     if (!id || !span) return false;
-    return patternSpans.some((item) => {
-      if (item.id !== id || item.span.orientation !== span.orientation) return false;
-      const axisTolerance = Math.max(750, Math.max(Number(row.breadth || 0), Number(item.row.breadth || 0), 0.45) * 1000 * 2.2);
-      if (Math.abs(Number(item.span.fixed || 0) - Number(span.fixed || 0)) > axisTolerance) return false;
+    const existingSpans = baseSpansByName.get(id) || [];
+    return existingSpans.some((existing) => {
+      if (existing.orientation !== span.orientation) return false;
+      const axisTolerance = Math.max(750, Number(row.breadth || 0.45) * 1000 * 2.2);
+      if (Math.abs(Number(existing.fixed || 0) - Number(span.fixed || 0)) > axisTolerance) return false;
       const overlap = Math.max(
         0,
-        Math.min(Math.max(item.span.start, item.span.end), Math.max(span.start, span.end)) -
-          Math.max(Math.min(item.span.start, item.span.end), Math.min(span.start, span.end)),
+        Math.min(Math.max(existing.start, existing.end), Math.max(span.start, span.end)) -
+          Math.max(Math.min(existing.start, existing.end), Math.min(span.start, span.end)),
       );
-      const shorter = Math.min(
-        Math.abs(item.span.end - item.span.start),
-        Math.abs(span.end - span.start),
-      );
-      return overlap >= Math.max(250, shorter * 0.45) || rowSpanGapMm(item.span, span) <= Math.max(250, axisTolerance * 0.5);
+      const shorter = Math.min(Math.abs(existing.end - existing.start), Math.abs(span.end - span.start));
+      return overlap >= Math.max(250, shorter * 0.45) || rowSpanGapMm(existing, span) <= Math.max(250, axisTolerance * 0.5);
     });
   };
-  return baseRows
-    .filter((row) => !coveredByPattern(row))
-    .concat(patternRows);
+  const supplementRows = patternRows.filter((row) => beamRowMergeId(row) && !alreadyMeasuredAtThisLocation(row));
+  return baseRows.concat(supplementRows);
 }
 
 function columnCapConcreteDeduction(joints = [], widthM = 0, depthM = 0) {
