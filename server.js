@@ -5475,7 +5475,7 @@ function mergeContinuousNamedBeamRows(rows = []) {
         continue;
       }
       const gap = item.span.start - currentEnd;
-      const continuityGapLimit = Math.max(900, Math.min(2500, Math.max(currentMaxSizeMm, itemMaxSizeMm, 600) * 3));
+      const continuityGapLimit = Math.max(900, Math.min(4500, Math.max(currentMaxSizeMm, itemMaxSizeMm, 600) * 7));
       if (gap <= continuityGapLimit) {
         current.push(item);
         currentEnd = Math.max(currentEnd, item.span.end);

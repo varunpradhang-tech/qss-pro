@@ -2837,10 +2837,19 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     });
     const pairedEdgeDimension = !cadDimension && (merged.mergedSegments?.length || 0) > 1;
     const markedFaceDimensions = markedFaceDimensionsForBeam(grid.dimensions, label, measuredLine, orientation, widthMm);
-    const markedFaceValuesMm = markedFaceDimensions
+    const rawMarkedFaceValuesMm = markedFaceDimensions
       .map((dimension) => Number(dimension.valueMm || 0))
       .filter((value) => value > 0)
       .sort((a, b) => a - b);
+    // markedFaceDimensionsForBeam's search window can return more than the two genuine
+    // inner/outer face dimensions (an unrelated nearby offset/support-width annotation), and
+    // markedFaceDimensionsAreCredibleBeamRun below only checks the set's largest value against
+    // geometry - it says nothing about whether the SMALLEST value (used as "lengthMm" a few
+    // lines down) is itself a plausible face-to-face span rather than a spurious small extra.
+    // Drop individually-implausible small values before picking min/max, same as the
+    // markedFaceDimensionsNearLabel/recoverNamedBeamRowsFromMarkedDimensions path.
+    const plausibleMarkedFaceValuesMm = rawMarkedFaceValuesMm.filter((value) => value >= Math.max(1200, widthMm * 3));
+    const markedFaceValuesMm = plausibleMarkedFaceValuesMm.length >= 2 ? plausibleMarkedFaceValuesMm : rawMarkedFaceValuesMm;
     const hasTwoMarkedFaceLengths = markedFaceValuesMm.length >= 2 &&
       (markedFaceValuesMm[markedFaceValuesMm.length - 1] - markedFaceValuesMm[0]) > Math.max(50, widthMm * 0.5);
     const markedFaceDimensionsLookLikeOffsets = hasTwoMarkedFaceLengths &&
