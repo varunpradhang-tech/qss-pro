@@ -123,6 +123,70 @@ function polygonArea(points) {
   return area / 2;
 }
 
+// For a rectilinear (axis-aligned) polygon, samples its cross-width at many positions along the
+// given axis and returns each sample's position, width, and the sample's own length-weight - used
+// to find which cross-width actually covers most of a notched panel's extent, for panels where the
+// drawing gives no dimension evidence at all for that axis (see dominantCrossWidthMm below).
+function polygonCrossWidthProfile(polygon, axis, sampleCount) {
+  const coords = polygon.map((point) => (axis === "x" ? point.x : point.y));
+  const min = Math.min(...coords);
+  const max = Math.max(...coords);
+  if (!(max > min)) return [];
+  const samples = [];
+  for (let index = 0; index <= sampleCount; index += 1) {
+    const t = index / sampleCount;
+    const inset = (max - min) * 0.0005;
+    const position = index === 0 ? min + inset : index === sampleCount ? max - inset : min + (max - min) * t;
+    // Some polygon edges are off by a few mm from perfectly axis-aligned (rounding artifacts from
+    // upstream node merging), so an exact a.y===b.y / a.x===b.x equality check silently drops those
+    // edges from the crossing count entirely - breaking the pairing for every sample in their range.
+    const axisAlignedToleranceMm = 60;
+    const crossings = [];
+    for (let vertexIndex = 0; vertexIndex < polygon.length; vertexIndex += 1) {
+      const a = polygon[vertexIndex];
+      const b = polygon[(vertexIndex + 1) % polygon.length];
+      if (axis === "x" && Math.abs(a.y - b.y) <= axisAlignedToleranceMm) {
+        const lo = Math.min(a.x, b.x);
+        const hi = Math.max(a.x, b.x);
+        if (position > lo && position < hi) crossings.push((a.y + b.y) / 2);
+      } else if (axis === "y" && Math.abs(a.x - b.x) <= axisAlignedToleranceMm) {
+        const lo = Math.min(a.y, b.y);
+        const hi = Math.max(a.y, b.y);
+        if (position > lo && position < hi) crossings.push((a.x + b.x) / 2);
+      }
+    }
+    crossings.sort((left, right) => left - right);
+    let width = 0;
+    for (let pairIndex = 0; pairIndex + 1 < crossings.length; pairIndex += 2) {
+      width += crossings[pairIndex + 1] - crossings[pairIndex];
+    }
+    samples.push({ position, width, stepMm: (max - min) / sampleCount });
+  }
+  return samples;
+}
+
+// Finds the width value that covers the greatest total length along the sampled axis - the span
+// most of the panel actually has, rather than whichever value happens to sit at the outer edge of
+// the bounding box (which can be a short, non-representative protrusion).
+function dominantCrossWidthMm(profile, bucketToleranceMm) {
+  const buckets = [];
+  for (const sample of profile) {
+    if (sample.width <= 0) continue;
+    const bucket = buckets.find((candidate) => Math.abs(candidate.width - sample.width) <= bucketToleranceMm);
+    if (bucket) {
+      bucket.coverageMm += sample.stepMm;
+      bucket.width = (bucket.width * bucket.count + sample.width) / (bucket.count + 1);
+      bucket.count += 1;
+    } else {
+      buckets.push({ width: sample.width, coverageMm: sample.stepMm, count: 1 });
+    }
+  }
+  if (!buckets.length) return null;
+  buckets.sort((a, b) => b.coverageMm - a.coverageMm);
+  const totalCoverageMm = buckets.reduce((sum, bucket) => sum + bucket.coverageMm, 0);
+  return { widthMm: buckets[0].width, coverageRatio: totalCoverageMm ? buckets[0].coverageMm / totalCoverageMm : 0 };
+}
+
 function pointInsideBox(point, box) {
   return point.x >= box.minX && point.x <= box.maxX && point.y >= box.minY && point.y <= box.maxY;
 }
@@ -695,6 +759,31 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
       } else if (effectiveHeightM > 0) {
         reportedBreadthM = effectiveHeightM;
         reportedLengthM = areaSqm / effectiveHeightM;
+      }
+    }
+    // Whenever the drawing gives NO dimension evidence at all for an axis (no written dimension,
+    // not even an implausible/rejected one nearby - a real dimension line, even with unreadable
+    // text, is still evidence someone intentionally measured that exact span), and this face is
+    // notched enough to distrust a plain box/derived value, prefer whichever cross-width actually
+    // covers most of the panel's extent on that axis over either the outer box edge (which can be a
+    // short, non-representative protrusion) or an area-derived value (which can land on neither real
+    // edge). An axis backed by any dimension evidence keeps its existing value untouched.
+    if (boxToPolygonRatio > maxBoxAreaRatio) {
+      const sampleCount = 150;
+      const bucketToleranceMm = 60;
+      const minCoverageRatio = 0.5;
+      const minDifferenceM = 0.05;
+      if (dimensionAudit.length.status === "missing") {
+        const dominant = dominantCrossWidthMm(polygonCrossWidthProfile(face.polygon, "y", sampleCount), bucketToleranceMm);
+        if (dominant && dominant.coverageRatio >= minCoverageRatio && Math.abs(dominant.widthMm / 1000 - reportedLengthM) > minDifferenceM) {
+          reportedLengthM = round3(dominant.widthMm / 1000);
+        }
+      }
+      if (dimensionAudit.breadth.status === "missing") {
+        const dominant = dominantCrossWidthMm(polygonCrossWidthProfile(face.polygon, "x", sampleCount), bucketToleranceMm);
+        if (dominant && dominant.coverageRatio >= minCoverageRatio && Math.abs(dominant.widthMm / 1000 - reportedBreadthM) > minDifferenceM) {
+          reportedBreadthM = round3(dominant.widthMm / 1000);
+        }
       }
     }
     const row = {
