@@ -1007,4 +1007,5 @@ module.exports = {
   solveGridSlabPanels,
   solveBoundarySlabPanels,
   buildQuantityReadiness,
+  isXrefEntity,
 };

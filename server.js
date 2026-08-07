@@ -1816,6 +1816,15 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
   if (areaItem && /topology_fallback/.test(selectedCalculationRoute)) {
     routeWarnings.push("Slab extraction used topology fallback; final quantity requires written CAD dimensions or verified beam/wall/column boundary validation.");
   }
+  const xrefDependentUnresolvedMarks = areaItem
+    ? (engineFallback?.result?.slab?.unresolvedMarks || []).filter((mark) => mark.xrefDependent)
+    : [];
+  if (xrefDependentUnresolvedMarks.length) {
+    const markList = [...new Set(xrefDependentUnresolvedMarks.map((mark) => mark.text))].join(", ");
+    routeWarnings.push(
+      `Slab mark(s) ${markList} could not be resolved from the primary drawing: nearby boundary geometry is mostly xref-bound (external reference), which is excluded from quantity extraction. Measure these manually from the reference/architectural file instead of expecting further automated extraction to close them.`,
+    );
+  }
   const weakBeamRoute = !areaItem && /topology_fallback|qb_beam_reference_readback/.test(selectedCalculationRoute);
   if (markedDimensionFastRows.length && rows === beamRows) {
     routeWarnings.push("Marked CAD dimensions were used as the primary measurement source; heavy topology fallback was not required.");

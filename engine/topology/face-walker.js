@@ -1,5 +1,5 @@
 "use strict";
-const { buildGridRegistry, extractBoundarySegments, extractCutoutVoids, extractSupportBoxes } = require("./boundary-graph.js");
+const { buildGridRegistry, extractBoundarySegments, extractCutoutVoids, extractSupportBoxes, isXrefEntity } = require("./boundary-graph.js");
 const { extractCadDimensions, validateBoxDimensions } = require("../cad/dimension-validator.js");
 const { cleanCadText } = require("../cad/dxf-reader.js");
 
@@ -486,6 +486,39 @@ function faceHasSlabMark(face, slabMarks) {
   return slabMarks.some((mark) => pointInsideBox(mark, face.box) && pointInsidePolygon(mark, face.polygon));
 }
 
+// A slab mark can fail to resolve for two very different reasons: (1) the primary drawing's own
+// boundary lines genuinely don't close around it (a drafting or classification issue, worth more
+// investigation), or (2) most of the nearby linework is xref-bound (an external reference we
+// deliberately don't trust for quantities), so the real boundary simply isn't available in this
+// file at all. Only the second case is a dead end - flag it distinctly so it reads as "measure this
+// one manually" rather than a generic unresolved count that invites more (futile) debugging.
+function xrefDependentUnresolvedMarks(entities, unresolvedMarks, options = {}) {
+  const radiusMm = Number(options.radiusMm || 3000);
+  const minXrefRatio = Number(options.minXrefRatio || 0.7);
+  const maxNonXrefLines = Number(options.maxNonXrefLines || 12);
+  const lines = entities.filter((entity) => entity.type === "LINE" &&
+    Number.isFinite(entity.x) && Number.isFinite(entity.y) && Number.isFinite(entity.x2) && Number.isFinite(entity.y2));
+
+  return unresolvedMarks.map((mark) => {
+    const nearby = lines.filter((line) => {
+      const midX = (line.x + line.x2) / 2;
+      const midY = (line.y + line.y2) / 2;
+      return Math.hypot(midX - mark.x, midY - mark.y) < radiusMm;
+    });
+    const xrefCount = nearby.filter((line) => isXrefEntity(line)).length;
+    const nonXrefCount = nearby.length - xrefCount;
+    const xrefRatio = nearby.length ? xrefCount / nearby.length : 0;
+    const xrefDependent = nearby.length > 0 && xrefRatio >= minXrefRatio && nonXrefCount <= maxNonXrefLines;
+    return {
+      ...mark,
+      xrefDependent,
+      reason: xrefDependent
+        ? "Boundary not resolvable from the primary drawing: nearby geometry is mostly xref-bound (external reference), which is excluded from quantity extraction. Measure this panel manually from the reference/architectural file."
+        : "Slab mark did not resolve to a closed panel boundary in the primary drawing.",
+    };
+  });
+}
+
 function isLikelyStructuralBodyFace(face, slabMarks, options = {}) {
   if (faceHasSlabMark(face, slabMarks)) return false;
   const widthM = (face.box.maxX - face.box.minX) / 1000;
@@ -679,6 +712,14 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
   const acceptedPanels = overlapGate.panels;
   const reviewCells = [...review, ...overlapGate.review];
 
+  // extractSlabMarks also matches free-text mentions of "SLAB" (schedule notes, block labels) for
+  // other callers' purposes; a reported "unresolved mark" should only ever be an actual mark like
+  // S12/S21A, not a sentence that happens to contain the word slab.
+  const unresolvedSlabMarks = slabMarks
+    .filter((mark) => /^S\d+[A-Z]?$/.test(mark.text))
+    .filter((mark) => !acceptedPanels.some((panel) => pointInsideBox(mark, panel.box) && pointInsidePolygon(mark, panel.polygon)));
+  const unresolvedMarks = xrefDependentUnresolvedMarks(entities, unresolvedSlabMarks, options.unresolvedMarks || {});
+
   return {
     graph: {
       nodes: graph.nodes.length,
@@ -689,6 +730,7 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
     },
     panels: acceptedPanels,
     reviewCells,
+    unresolvedMarks,
     totals: {
       directPanels: acceptedPanels.length,
       inferredPanels: 0,
@@ -697,6 +739,8 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
       slabConcreteCum: round3(acceptedPanels.reduce((sum, panel) => sum + panel.concreteCum, 0)),
       cutoutDeductionSqm: round3(acceptedPanels.reduce((sum, panel) => sum + panel.cutoutAreaSqm, 0)),
       reviewAreaSqm: round3(reviewCells.reduce((sum, cell) => sum + cell.grossAreaSqm, 0)),
+      unresolvedMarks: unresolvedMarks.length,
+      xrefDependentUnresolvedMarks: unresolvedMarks.filter((mark) => mark.xrefDependent).length,
     },
   };
 }
