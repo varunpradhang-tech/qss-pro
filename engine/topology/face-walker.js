@@ -235,7 +235,15 @@ function rangeQuery(index, minKey, maxKey) {
 
 function buildElementaryEdges(segments, options = {}) {
   const splitToleranceMm = Number(options.splitToleranceMm || 80);
-  const minEdgeLengthMm = Number(options.minEdgeLengthMm || 250);
+  // normalizeSegments already enforces minSegmentLengthMm (default 250) on every segment before it
+  // reaches here, so a short piece below that length can only come from splitting a real, already-
+  // validated segment at a genuine crossing near one of its ends (e.g. a support box's own corner).
+  // Dropping those short split pieces - rather than just genuinely degenerate zero-length artifacts -
+  // silently breaks the graph's connectivity at that exact corner: a node that should have a third
+  // edge closing a support box's face into a proper 4-way junction is left with only two, so the
+  // face walk takes the wrong branch there and sweeps a large, badly warped polygon instead of the
+  // real room. Only filter out truly degenerate (near-zero-length) pieces here.
+  const minEdgeLengthMm = Number(options.minEdgeLengthMm || 5);
   const maxEdges = Number(options.maxEdges || 35000);
   const horizontal = segments.filter((segment) => segment.orientation === "H");
   const vertical = segments.filter((segment) => segment.orientation === "V");
