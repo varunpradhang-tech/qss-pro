@@ -525,34 +525,14 @@ function mergeSlabThicknessInfo(baseInfo, detailInfos = []) {
     defaultThicknessMm: baseInfo.defaultThicknessMm || 0,
     defaultNote: baseInfo.defaultNote || null,
   };
-  const seenSlabMarks = new Set(
-    merged.slabMarks.map((mark) => [
-      String(mark.text || "").toUpperCase(),
-      Math.round(Number(mark.x || 0) / 100),
-      Math.round(Number(mark.y || 0) / 100),
-    ].join(":")),
-  );
-  const isPlanSlabMark = (mark) => {
-    const layer = String(mark.layer || "").toUpperCase();
-    if (/TABLE|SCHEDULE|DETAIL|SECTION|TITLE|NOTE|REBAR|BAR|BBS|BEAM\s*SIZE/.test(layer)) return false;
-    return /^S\d+[A-Z]?$/i.test(String(mark.text || "")) &&
-      Number.isFinite(Number(mark.x)) &&
-      Number.isFinite(Number(mark.y));
-  };
-
+  // A linked detail/schedule drawing (beam size, slab thickness table, section, etc.) exists purely
+  // to supply thickness VALUES for marks the plan itself already found - it must never introduce new
+  // slab marks of its own. A slab-thickness schedule table legitimately has rows like "S1", "S2" that
+  // match the plan-mark text pattern; counting those as additional physical rooms needing panel
+  // closure silently inflates slabMarkCount/unresolvedSlabMarkCount by however many rows the schedule
+  // table has, which locks the quantity release even when the actual plan's own marks resolve fine.
   for (const detail of detailInfos) {
     if (!detail) continue;
-    for (const mark of detail.slabMarks || []) {
-      if (!isPlanSlabMark(mark)) continue;
-      const key = [
-        String(mark.text || "").toUpperCase(),
-        Math.round(Number(mark.x || 0) / 100),
-        Math.round(Number(mark.y || 0) / 100),
-      ].join(":");
-      if (seenSlabMarks.has(key)) continue;
-      seenSlabMarks.add(key);
-      merged.slabMarks.push(mark);
-    }
     merged.thicknessTexts.push(...(detail.thicknessTexts || []));
     for (const [mark, spec] of Object.entries(detail.slabSpecs || {})) {
       if (!spec?.thicknessMm) continue;
