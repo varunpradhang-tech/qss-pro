@@ -1576,10 +1576,16 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
   const blockedReviewReferenceOnly = areaItem &&
     slabReviewReferenceRows.length &&
     (!rows.length || slabReviewRowsAreNotFinal);
+  // finalQuantityRows assigns each panel its P1/P2/... number by sorted position (top-to-bottom,
+  // left-to-right). The top-level handler runs that same function again on the flattened final
+  // rows to build the Excel sheet - applying it here too, before the reference drawing is built,
+  // means the panel numbers drawn on the DWG match the numbers the user sees in Excel. Without
+  // this, the drawing would assign its own arbitrary index-based numbering that has no relationship
+  // to the Excel row order, making the two impossible to cross-check.
   const referenceRowsForDrawing = blockedReviewReferenceOnly
-    ? slabReviewReferenceRows
+    ? finalQuantityRows(slabReviewReferenceRows, itemType)
     : areaItem && !rows.length && slabReviewReferenceRows.length
-    ? slabReviewReferenceRows
+    ? finalQuantityRows(slabReviewReferenceRows, itemType)
     : rows;
   const referenceSourceEntities = entitiesAfterFramingRegion.length ? entitiesAfterFramingRegion : entities;
   const correctionSourceEntities = rawEntities.length ? rawEntities : referenceSourceEntities;
@@ -2616,8 +2622,14 @@ function panelMarksFromQuantityRows(rows = []) {
       const hasWrittenDimensionEvidence =
         /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|cad-dimension/i.test(sourceText) ||
         (Number.isFinite(Number(evidence.cadLengthM)) && Number.isFinite(Number(evidence.cadBreadthM)));
+      // A row measured from a genuine closed planar-face-walk topology face (real beam/support-
+      // bounded CAD polygon, not a guessed/inferred cell) is legitimate boundary evidence in its own
+      // right, even with no written dimension label - without this, topology-fallback rows (now
+      // surfaced as review quantity) never get a panel number drawn on the reference drawing at all,
+      // leaving no way to cross-check the Excel rows against the drawing.
+      const hasGenuineClosedFaceEvidence = /planar-face-walk/i.test(sourceText);
       const blockedWeakSource = /topology|barrier-cell|enclosure-candidate|open-bay|slab-mark-review|locked-slab-review|grid-infer|fake|weak/i.test(sourceText);
-      return hasWrittenDimensionEvidence && !blockedWeakSource;
+      return (hasWrittenDimensionEvidence || hasGenuineClosedFaceEvidence) && !blockedWeakSource;
     })
     .map((row, index) => {
       const box = quantityRowPanelBox(row);
