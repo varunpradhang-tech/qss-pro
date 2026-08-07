@@ -1532,19 +1532,27 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         },
       }));
       const reviewNetAreaM2 = slabNetTotal(slabReviewReferenceRows);
-      const reviewRowsWithBoundaryEvidence = slabReviewReferenceRows.filter((row) =>
-        /written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|verified/i.test(String(row.evidence?.boundaryBasis || row.source || "")),
-      ).length;
+      const reviewRowsWithBoundaryEvidence = slabReviewReferenceRows.filter((row) => {
+        if (/written-cad-dimension|visible-dimension-text|text-dimension-label|marked-cad-dimension|verified/i.test(String(row.evidence?.boundaryBasis || row.source || ""))) {
+          return true;
+        }
+        // Topology/face-walk rows carry no written-dimension label, but a real closed CAD panel box
+        // (from a genuine planar face, not a placeholder) is boundary evidence in its own right.
+        const evidence = row.evidence || {};
+        const widthM = Math.abs(Number(evidence.panelRightX) - Number(evidence.panelLeftX)) / 1000;
+        const heightM = Math.abs(Number(evidence.panelTopY) - Number(evidence.panelBottomY)) / 1000;
+        return Number.isFinite(widthM) && Number.isFinite(heightM) && widthM >= 1.2 && heightM >= 1.2;
+      }).length;
       const reviewCoverageRatio = rawSlabMarkCount
         ? slabReviewReferenceRows.length / rawSlabMarkCount
         : (slabReviewReferenceRows.length ? 1 : 0);
-      const reviewRowsAreOnlyForDrawing = slabReviewReferenceRows.length > 0 &&
-        slabReviewReferenceRows.every((row) =>
-          row.needsReview ||
-          row.evidence?.blockedReviewCandidate ||
-          row.evidence?.reviewQuantityFromBlockedSlab ||
-          /locked-slab-review|review|fallback/i.test(String(row.source || "")));
-      const reviewRowsPlausible = !reviewRowsAreOnlyForDrawing &&
+      // Every row that reaches this point is, by construction, flagged needsReview/
+      // reviewQuantityFromBlockedSlab a few lines above (line ~1521) - that flag means "verify
+      // before billing", not "this data is fake". Disqualifying rows for carrying the exact flag
+      // this code just stamped on them made this check always true, which silently zeroed out every
+      // real topology-fallback result (e.g. 37 genuine panels/275 sqm) regardless of how much
+      // coverage or boundary evidence it had. A review-only quantity is still worth showing.
+      const reviewRowsPlausible =
         slabReviewReferenceRows.length >= Math.max(4, Math.ceil((rawSlabMarkCount || slabReviewReferenceRows.length) * 0.35)) &&
         reviewRowsWithBoundaryEvidence >= Math.max(4, Math.ceil(slabReviewReferenceRows.length * 0.5)) &&
         reviewNetAreaM2 >= Math.max(25, (rawSlabMarkCount || slabReviewReferenceRows.length) * 1.5) &&
