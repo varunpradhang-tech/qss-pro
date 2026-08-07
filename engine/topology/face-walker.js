@@ -664,9 +664,20 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
     const boxAreaSqm = effectiveWidthM * effectiveHeightM;
     const boxToPolygonRatio = boxAreaSqm / Math.max(areaSqm, 0.001);
     const maxBoxAreaRatio = Number(options.maxBoxAreaRatio || 1.08);
-    const useBoxArea = dimensionAudit.hasBothDimensions && boxToPolygonRatio <= maxBoxAreaRatio;
+    // A beam that stops short of the far wall, with a column/pier picking up the rest of the span,
+    // still has a bounding box that correctly measures the true wall-to-wall dimension - the column
+    // just bites a notch out of the room's footprint. That box is worth trusting (and the notch
+    // simply deducted like a cutout) rather than distrusting it and deriving a synthetic, often
+    // nonsensical, length/breadth from the smaller notched-polygon area. Only fall back to deriving a
+    // dimension when the box/polygon mismatch ISN'T explained by an actual support box overlapping
+    // this face (a genuinely stepped multi-room shape, not a column notch).
+    const boxPolygonExcessSqm = Math.max(0, boxAreaSqm - areaSqm);
+    const hasSupportNotch = supportOverlapSqm > 0.1 &&
+      boxPolygonExcessSqm / Math.max(areaSqm, 0.001) <= 0.6;
+    const useBoxArea = hasSupportNotch || (dimensionAudit.hasBothDimensions && boxToPolygonRatio <= maxBoxAreaRatio);
     const effectiveAreaSqm = useBoxArea ? boxAreaSqm : areaSqm;
-    const netAreaSqm = Math.max(0, effectiveAreaSqm - cutoutAreaSqm);
+    const supportNotchDeductionSqm = hasSupportNotch ? round3(boxPolygonExcessSqm) : 0;
+    const netAreaSqm = Math.max(0, effectiveAreaSqm - cutoutAreaSqm - supportNotchDeductionSqm);
     const isIrregularShape = !useBoxArea && boxToPolygonRatio > maxBoxAreaRatio;
     // For a stepped/irregular boundary the bounding box overstates the true footprint, so a plain
     // width x height no longer multiplies out to the real area. Keep whichever axis is best-grounded
@@ -718,6 +729,7 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
         "Beam-enclosed CAD topology face.",
         [dimensionAudit.length.status, dimensionAudit.breadth.status].includes("cad_authoritative") ? "CAD dimension used for panel size." : "",
         isIrregularShape ? "Irregular/stepped boundary; CAD polygon area used, and one reported dimension is an effective value derived from true area (bounding rectangle would overstate the panel)." : "",
+        hasSupportNotch ? `Length/breadth taken from the full wall-to-wall bounding box (a beam stops short of the far wall/column here); column/support footprint of ${supportNotchDeductionSqm} sqm deducted from net area.` : "",
         dimensionAudit.hasConflict ? "review needed: dimension conflict" : "",
         cutoutAreaSqm > 0 ? `cutout deducted ${round3(cutoutAreaSqm)} sqm` : "",
       ].filter(Boolean).join(" "),
