@@ -104,7 +104,7 @@ function hasBeamTextEvidenceNearLine(line, beamTextIndexByOrientation, options =
   });
 }
 
-function parallelBeamMate(line, lineRowIndexByOrientation, options = {}) {
+function parallelMateCount(line, lineRowIndexByOrientation, options = {}) {
   const minBeamWidthMm = Number(options.minBeamWidthMm || 120);
   const maxBeamWidthMm = Number(options.maxBeamWidthMm || 1400);
   const minOverlapMm = Number(options.minOverlapMm || 450);
@@ -113,11 +113,11 @@ function parallelBeamMate(line, lineRowIndexByOrientation, options = {}) {
     ...rangeQuery(index, line.fixed - maxBeamWidthMm, line.fixed - minBeamWidthMm),
     ...rangeQuery(index, line.fixed + minBeamWidthMm, line.fixed + maxBeamWidthMm),
   ];
-  return candidates.some((other) => {
+  return candidates.filter((other) => {
     if (other === line) return false;
     const overlap = overlap1d(line.start, line.end, other.start, other.end);
     return overlap >= minOverlapMm;
-  });
+  }).length;
 }
 
 function lineRecord(entity) {
@@ -286,7 +286,13 @@ function extractBoundarySegments(entities) {
       const lineType = normalizedLineType(entity);
       const currentLine = lineRowByEntity.get(entity);
       const hasBeamText = currentLine ? hasBeamTextEvidenceNearLine(currentLine, beamTextIndexByOrientation) : false;
-      const hasParallelBeamMate = currentLine ? parallelBeamMate(currentLine, lineRowIndexByOrientation) : false;
+      // A real beam cross-section has exactly two long faces, so a genuine face has exactly one
+      // parallel mate at beam-width spacing. Three or more evenly-spaced parallel lines in that same
+      // band (e.g. a stirrup/rebar-spacing detail drawn on a generic layer like "0") is a repeated
+      // schedule/detail pattern, not a beam face - inferring beam_face there pollutes the slab-panel
+      // boundary graph with fake edges near the real beam text they happen to sit next to.
+      const parallelMates = currentLine ? parallelMateCount(currentLine, lineRowIndexByOrientation) : 0;
+      const hasParallelBeamMate = parallelMates === 1;
       const gridLike = isGridLikeLine(entity);
       const nonStructuralLayer = /NON[\s\-_]*STR/i.test(layer);
       const xrefSourced = isXrefEntity(entity);
