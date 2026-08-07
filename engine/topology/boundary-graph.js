@@ -321,6 +321,27 @@ function extractBoundarySegments(entities) {
     });
 }
 
+function polygonAreaFromVertices(vertices) {
+  let area = 0;
+  for (let index = 0; index < vertices.length; index += 1) {
+    const a = vertices[index];
+    const b = vertices[(index + 1) % vertices.length];
+    area += (a.x * b.y) - (b.x * a.y);
+  }
+  return Math.abs(area / 2);
+}
+
+function isRectilinearPolygon(vertices, toleranceMm = 5) {
+  for (let index = 0; index < vertices.length; index += 1) {
+    const a = vertices[index];
+    const b = vertices[(index + 1) % vertices.length];
+    const dx = Math.abs(a.x - b.x);
+    const dy = Math.abs(a.y - b.y);
+    if (dx > toleranceMm && dy > toleranceMm) return false;
+  }
+  return true;
+}
+
 function extractSupportBoxes(entities) {
   return entities
     .filter((entity) => ["LWPOLYLINE", "POLYLINE", "HATCH"].includes(entity.type) && entity.vertices?.length >= 4)
@@ -343,10 +364,24 @@ function extractSupportBoxes(entities) {
       const width = box.maxX - box.minX;
       const height = box.maxY - box.minY;
       const ratio = Math.max(width, height) / Math.max(Math.min(width, height), 1);
+      // A simple rectangular column's bounding box already IS its true footprint. But an L/Z-shaped
+      // one (common for a column that's bigger than the beam framing into one face of it) has a box
+      // that overstates its real material at a given height - collapsing it to 4 flat sides creates
+      // a wall face where the column doesn't actually reach, and symmetrically cuts a beam's own
+      // longer, genuinely real face short right where the column's true material doesn't block it.
+      // Keep the polygon's own rectilinear edges for those instead of flattening them into a box.
+      const vertices = entity.vertices || [];
+      const rectilinear = vertices.length >= 4 && isRectilinearPolygon(vertices);
+      const polygonAreaMm2 = rectilinear ? polygonAreaFromVertices(vertices) : null;
+      const boxAreaMm2 = width * height;
+      const trueShapePolygon = rectilinear && polygonAreaMm2 !== null && polygonAreaMm2 < boxAreaMm2 * 0.92
+        ? vertices.map((v) => ({ x: v.x, y: v.y }))
+        : null;
       return {
         type: /COL|COLUMN/.test(layer) && ratio < 3 ? "column" : /LIFT|SHAFT/.test(layer) ? "lift_wall" : "wall",
         layer: entity.layer,
         box,
+        polygon: trueShapePolygon,
         faces: {
           left: box.minX,
           right: box.maxX,

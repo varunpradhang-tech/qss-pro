@@ -20,7 +20,7 @@ function overlapArea(a, b) {
 function removeOverlappingSlabPanels(panels, options = {}) {
   const minOverlapSqm = Number(options.minOverlapSqm || 0.05);
   const minOverlapRatio = Number(options.minOverlapRatio || 0.05);
-  const maxTrimOverlapRatio = Number(options.maxTrimOverlapRatio || 0.12);
+  const maxTrimOverlapRatio = Number(options.maxTrimOverlapRatio || 0.3);
   const maxCumulativeTrimRatio = Number(options.maxCumulativeTrimRatio || 0.18);
   const rejected = new Set();
   const adjusted = panels.map((panel) => ({ ...panel, overlapDeductionSqm: panel.overlapDeductionSqm || 0 }));
@@ -233,6 +233,21 @@ function lineInterval(boundary, coordinateToleranceMm) {
 function supportBoxFaceSegments(supportBoxes) {
   const rows = [];
   for (const support of supportBoxes) {
+    if (support.polygon && support.polygon.length >= 4) {
+      // A meaningfully non-rectangular column/wall - use its own rectilinear edges instead of
+      // flattening it to a 4-sided box (see extractSupportBoxes for why that box can be wrong).
+      const poly = support.polygon;
+      for (let index = 0; index < poly.length; index += 1) {
+        const a = poly[index];
+        const b = poly[(index + 1) % poly.length];
+        if (Math.abs(a.y - b.y) <= 5 && Math.abs(a.x - b.x) > 5) {
+          rows.push({ type: "support_face", orientation: "H", fixed: (a.y + b.y) / 2, start: Math.min(a.x, b.x), end: Math.max(a.x, b.x), layer: support.layer || "support-box", lengthMm: Math.abs(b.x - a.x) });
+        } else if (Math.abs(a.x - b.x) <= 5 && Math.abs(a.y - b.y) > 5) {
+          rows.push({ type: "support_face", orientation: "V", fixed: (a.x + b.x) / 2, start: Math.min(a.y, b.y), end: Math.max(a.y, b.y), layer: support.layer || "support-box", lengthMm: Math.abs(b.y - a.y) });
+        }
+      }
+      continue;
+    }
     const b = support.box;
     rows.push(
       { type: "support_face", orientation: "H", fixed: b.minY, start: b.minX, end: b.maxX, layer: support.layer || "support-box", lengthMm: b.maxX - b.minX },
