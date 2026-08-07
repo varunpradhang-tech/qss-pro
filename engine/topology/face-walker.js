@@ -53,7 +53,18 @@ function removeOverlappingSlabPanels(panels, options = {}) {
       if (overlapSqm < minOverlapSqm) continue;
       const smallerArea = Math.min(adjusted[i].grossAreaSqm, adjusted[j].grossAreaSqm);
       if (overlapSqm / Math.max(smallerArea, 0.001) < minOverlapRatio) continue;
-      const rejectIndex = adjusted[i].grossAreaSqm >= adjusted[j].grossAreaSqm ? i : j;
+      // Preferring the smaller footprint assumes the bigger one wrongly merged two real rooms - a
+      // reasonable default. But a face whose true polygon area is far smaller than its own bounding
+      // box (a hugely irregular/zigzag shape) is far more likely a broken face-walk artifact than a
+      // legitimately stepped room, regardless of which one is smaller. Reject on irregularity first
+      // when it clearly distinguishes the two; only fall back to the area heuristic when both shapes
+      // look similarly regular.
+      const ratioA = Number(adjusted[i].boxToPolygonRatio);
+      const ratioB = Number(adjusted[j].boxToPolygonRatio);
+      const irregularityGapThreshold = 0.5;
+      const rejectIndex = Number.isFinite(ratioA) && Number.isFinite(ratioB) && Math.abs(ratioA - ratioB) > irregularityGapThreshold
+        ? (ratioA >= ratioB ? i : j)
+        : (adjusted[i].grossAreaSqm >= adjusted[j].grossAreaSqm ? i : j);
       const rejectOverlapRatio = overlapSqm / Math.max(adjusted[rejectIndex].grossAreaSqm, 0.001);
       if (rejectOverlapRatio <= maxTrimOverlapRatio && trimSmallOverlap(rejectIndex, overlapSqm)) continue;
       rejected.add(rejectIndex);
