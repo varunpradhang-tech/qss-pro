@@ -3,6 +3,11 @@ const { cleanCadText } = require("./dxf-reader.js");
 
 const DEFAULT_TOLERANCE_MM = 40;
 
+function isXrefEntity(entity) {
+  const looksXrefBound = (value) => /\$\d+\$/.test(String(value || "")) || /^X[A-Za-z]/.test(String(value || ""));
+  return looksXrefBound(entity?.sourceBlock) || looksXrefBound(entity?.layer);
+}
+
 function numeric(value) {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
@@ -109,12 +114,17 @@ function dimensionFromText(entity) {
 }
 
 function extractCadDimensions(entities) {
+  // An xref-bound dimension (e.g. from a generic "Column_Typ" detail xref) describes whatever that
+  // external reference happens to show, not necessarily this specific room's actual span - trusting
+  // it over solid local geometry is exactly the kind of xref pollution this app excludes everywhere
+  // else. A dimension with no real connection to this drawing's own primary content shouldn't be
+  // allowed to override a measurement two independent local beam/wall lines already agree on.
   const entityDimensions = entities
-    .filter((entity) => entity.type === "DIMENSION")
+    .filter((entity) => entity.type === "DIMENSION" && !isXrefEntity(entity))
     .map(dimensionFromEntity)
     .filter(Boolean);
   const textDimensions = entities
-    .filter((entity) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(entity.type) && entity.text)
+    .filter((entity) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(entity.type) && entity.text && !isXrefEntity(entity))
     .filter((entity) => !/[A-Z]/i.test(cleanCadText(entity.text).replace(/[xX]/g, "")))
     .map(dimensionFromText)
     .filter(Boolean);
