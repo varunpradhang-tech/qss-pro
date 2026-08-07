@@ -316,17 +316,66 @@ function buildElementaryEdges(segments, options = {}) {
 function buildPlanarCadGraph(entities, options = {}) {
   const segments = normalizeSegments(entities, options);
   const edges = buildElementaryEdges(segments, options);
-  const nodes = new Map();
+  // Two edges meant to meet at the same corner rarely land on the exact same mm coordinate in a
+  // real CAD drawing (drafting tolerance, rounding), so endpoints are snapped onto an existing
+  // node within tolerance instead of requiring an exact match. Every edge here is axis-aligned
+  // (H or V), so a genuine corner is always a crossing of DIFFERENT orientations, while the two
+  // parallel faces of the same beam/wall are always the SAME orientation. That lets a same-
+  // orientation merge stay tight (nodeMergeToleranceMm, well under any real member width) while a
+  // cross-orientation corner merge can safely use a larger tolerance (cornerMergeToleranceMm)
+  // without risking collapsing a real member's width down to a single point.
+  const nodeMergeToleranceMm = Number(options.nodeMergeToleranceMm || 100);
+  const cornerMergeToleranceMm = Number(options.cornerMergeToleranceMm || 280);
+  const nodeBuckets = new Map();
+  const cellSize = Math.max(nodeMergeToleranceMm, cornerMergeToleranceMm);
+  const cellIndex = (value) => Math.floor(value / cellSize);
 
-  function node(x, y) {
-    const key = pointKey(x, y);
-    if (!nodes.has(key)) nodes.set(key, { key, x: Math.round(x), y: Math.round(y), out: [] });
-    return nodes.get(key);
+  function candidatesNear(x, y) {
+    const baseX = cellIndex(x);
+    const baseY = cellIndex(y);
+    const found = [];
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        const bucket = nodeBuckets.get(`${baseX + dx}:${baseY + dy}`);
+        if (bucket) found.push(...bucket);
+      }
+    }
+    return found;
+  }
+
+  function node(x, y, orientation) {
+    const candidates = candidatesNear(x, y);
+    let tightBest = null;
+    let tightBestDist = nodeMergeToleranceMm;
+    let cornerBest = null;
+    let cornerBestDist = cornerMergeToleranceMm;
+    for (const candidate of candidates) {
+      const dist = Math.hypot(candidate.x - x, candidate.y - y);
+      if (dist <= tightBestDist) {
+        tightBestDist = dist;
+        tightBest = candidate;
+      }
+      const hasSameOrientation = candidate.orientations.has(orientation);
+      if (!hasSameOrientation && dist <= cornerBestDist) {
+        cornerBestDist = dist;
+        cornerBest = candidate;
+      }
+    }
+    const existing = tightBest || cornerBest;
+    if (existing) {
+      existing.orientations.add(orientation);
+      return existing;
+    }
+    const created = { key: pointKey(x, y), x: Math.round(x), y: Math.round(y), out: [], orientations: new Set([orientation]) };
+    const bucketKey = `${cellIndex(created.x)}:${cellIndex(created.y)}`;
+    if (!nodeBuckets.has(bucketKey)) nodeBuckets.set(bucketKey, []);
+    nodeBuckets.get(bucketKey).push(created);
+    return created;
   }
 
   for (const edge of edges) {
-    const a = node(edge.x1, edge.y1);
-    const b = node(edge.x2, edge.y2);
+    const a = node(edge.x1, edge.y1, edge.orientation);
+    const b = node(edge.x2, edge.y2, edge.orientation);
     const angleAB = Math.atan2(b.y - a.y, b.x - a.x);
     const angleBA = Math.atan2(a.y - b.y, a.x - b.x);
     const ab = { edge, from: a, to: b, angle: angleAB };
@@ -335,8 +384,9 @@ function buildPlanarCadGraph(entities, options = {}) {
     b.out.push(ba);
   }
 
-  for (const item of nodes.values()) item.out.sort((a, b) => a.angle - b.angle);
-  return { nodes: [...nodes.values()], edges, segments };
+  const allNodes = [...nodeBuckets.values()].flat();
+  for (const item of allNodes) item.out.sort((a, b) => a.angle - b.angle);
+  return { nodes: allNodes, edges, segments };
 }
 
 function walkPlanarFaces(graph, options = {}) {
@@ -565,14 +615,34 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
     const useBoxArea = dimensionAudit.hasBothDimensions && boxToPolygonRatio <= maxBoxAreaRatio;
     const effectiveAreaSqm = useBoxArea ? boxAreaSqm : areaSqm;
     const netAreaSqm = Math.max(0, effectiveAreaSqm - cutoutAreaSqm);
+    const isIrregularShape = !useBoxArea && boxToPolygonRatio > maxBoxAreaRatio;
+    // For a stepped/irregular boundary the bounding box overstates the true footprint, so a plain
+    // width x height no longer multiplies out to the real area. Keep whichever axis is best-grounded
+    // (a written CAD dimension, else the longer geometric extent) and derive the other axis from the
+    // true polygon area so the two reported numbers stay consistent with netAreaSqm.
+    let reportedLengthM = effectiveWidthM;
+    let reportedBreadthM = effectiveHeightM;
+    if (isIrregularShape) {
+      const lengthIsAuthoritative = dimensionAudit.length.status === "cad_authoritative";
+      const breadthIsAuthoritative = dimensionAudit.breadth.status === "cad_authoritative";
+      const keepLength = lengthIsAuthoritative || (!breadthIsAuthoritative && widthM >= heightM);
+      if (keepLength && effectiveWidthM > 0) {
+        reportedLengthM = effectiveWidthM;
+        reportedBreadthM = areaSqm / effectiveWidthM;
+      } else if (effectiveHeightM > 0) {
+        reportedBreadthM = effectiveHeightM;
+        reportedLengthM = areaSqm / effectiveHeightM;
+      }
+    }
     const row = {
       panel: `TP${panels.length + 1}`,
       gridBand: nearestGridBand(grid, face.box),
-      lengthM: round3(effectiveWidthM),
-      breadthM: round3(effectiveHeightM),
+      lengthM: round3(reportedLengthM),
+      breadthM: round3(reportedBreadthM),
       thicknessM,
       geometryLengthM: round3(widthM),
       geometryBreadthM: round3(heightM),
+      shapeType: isIrregularShape ? "irregular" : "rectangular",
       grossAreaSqm: round3(effectiveAreaSqm),
       boundingBoxAreaSqm: round3(boxAreaSqm),
       geometryAreaSqm: round3(areaSqm),
@@ -595,7 +665,7 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
       remarks: [
         "Beam-enclosed CAD topology face.",
         [dimensionAudit.length.status, dimensionAudit.breadth.status].includes("cad_authoritative") ? "CAD dimension used for panel size." : "",
-        !useBoxArea && boxToPolygonRatio > maxBoxAreaRatio ? "CAD polygon area used; bounding rectangle would overstate panel." : "",
+        isIrregularShape ? "Irregular/stepped boundary; CAD polygon area used, and one reported dimension is an effective value derived from true area (bounding rectangle would overstate the panel)." : "",
         dimensionAudit.hasConflict ? "review needed: dimension conflict" : "",
         cutoutAreaSqm > 0 ? `cutout deducted ${round3(cutoutAreaSqm)} sqm` : "",
       ].filter(Boolean).join(" "),

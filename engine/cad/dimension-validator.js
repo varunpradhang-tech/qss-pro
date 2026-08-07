@@ -197,9 +197,12 @@ function validateSpanDimension(span, dimensions, options = {}) {
 
   const conflict = best.valueDiffMm > toleranceMm;
   const spanEndpointNearDimension = best.endpointDiffMm > toleranceMm && best.endpointDiffMm <= endpointToleranceMm;
+  const cadWildlyDisagreesWithGeometry = valueMm > 0 &&
+    (best.dimension.valueMm < valueMm * 0.4 || best.dimension.valueMm > valueMm * 2.5);
   const canUseCadDimension = conflict &&
     best.textReliable &&
     best.authoritativePositionOk &&
+    !cadWildlyDisagreesWithGeometry &&
     (best.dimension.source === "dimension-text" || spanEndpointNearDimension || best.axisDiffMm <= axisToleranceMm * 2);
   if (canUseCadDimension) {
     return {
@@ -216,6 +219,24 @@ function validateSpanDimension(span, dimensions, options = {}) {
       extensionSpanMm: best.extensionSpanMm,
       extensionSpanDiffMm: best.extensionSpanDiffMm,
       note: `CAD dimension is self-consistent and near this span; using CAD value over geometry by ${Math.round(best.valueDiffMm)} mm.`,
+    };
+  }
+
+  if (conflict && cadWildlyDisagreesWithGeometry) {
+    return {
+      status: "geometry_over_implausible_dimension",
+      geometryMm: valueMm,
+      dimensionMm: best.dimension.valueMm,
+      effectiveMm: valueMm,
+      differenceMm: best.valueDiffMm,
+      source: best.dimension.source,
+      rawText: best.dimension.rawText,
+      axisDiffMm: best.axisDiffMm,
+      endpointDiffMm: best.endpointDiffMm,
+      textReliabilityReason: best.textReliabilityReason,
+      extensionSpanMm: best.extensionSpanMm,
+      extensionSpanDiffMm: best.extensionSpanDiffMm,
+      note: `Nearby CAD dimension (${Math.round(best.dimension.valueMm)} mm) is implausible against geometry (${Math.round(valueMm)} mm); using geometry.`,
     };
   }
 
@@ -257,7 +278,7 @@ function validateBoxDimensions(box, dimensions, options = {}) {
     textX: centerX,
     textY: centerY,
   }, dimensions, options);
-  const okStatuses = ["matched", "missing", "cad_authoritative"];
+  const okStatuses = ["matched", "missing", "cad_authoritative", "geometry_over_implausible_dimension"];
   return {
     length,
     breadth,
