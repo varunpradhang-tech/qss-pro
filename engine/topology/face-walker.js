@@ -203,6 +203,37 @@ function pointInsidePolygon(point, polygon) {
   return inside;
 }
 
+function distanceToSegment(point, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const lengthSq = dx * dx + dy * dy;
+  if (lengthSq === 0) return Math.hypot(point.x - a.x, point.y - a.y);
+  let t = ((point.x - a.x) * dx + (point.y - a.y) * dy) / lengthSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(point.x - (a.x + t * dx), point.y - (a.y + t * dy));
+}
+
+function distanceToPolygonBoundary(point, polygon) {
+  let min = Infinity;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
+    const d = distanceToSegment(point, polygon[j], polygon[i]);
+    if (d < min) min = d;
+  }
+  return min;
+}
+
+// A slab-number label's insertion point sometimes lands a few mm outside a narrow
+// strip's true edge (drafting/rounding snap artifact) - without tolerance that reads
+// as "no mark", which misclassifies the strip as a structural body face (a beam's own
+// footprint) instead of the real numbered panel it labels.
+function markMatchesFace(mark, face, toleranceMm) {
+  if (pointInsideBox(mark, face.box) && pointInsidePolygon(mark, face.polygon)) return true;
+  if (!toleranceMm) return false;
+  const nearBox = mark.x >= face.box.minX - toleranceMm && mark.x <= face.box.maxX + toleranceMm &&
+    mark.y >= face.box.minY - toleranceMm && mark.y <= face.box.maxY + toleranceMm;
+  return nearBox && distanceToPolygonBoundary(mark, face.polygon) <= toleranceMm;
+}
+
 function lineInterval(boundary, coordinateToleranceMm) {
   if (boundary.orientation === "H") {
     return {
@@ -580,8 +611,10 @@ function extractSlabMarks(entities) {
     .filter((entity) => /^S\d+[A-Z]?$/.test(entity.text) || /SLAB/.test(entity.text));
 }
 
-function faceHasSlabMark(face, slabMarks) {
-  return slabMarks.some((mark) => pointInsideBox(mark, face.box) && pointInsidePolygon(mark, face.polygon));
+const SLAB_MARK_SNAP_TOLERANCE_MM = 25;
+
+function faceHasSlabMark(face, slabMarks, toleranceMm = SLAB_MARK_SNAP_TOLERANCE_MM) {
+  return slabMarks.some((mark) => markMatchesFace(mark, face, toleranceMm));
 }
 
 // A slab mark can fail to resolve for two very different reasons: (1) the primary drawing's own
@@ -852,7 +885,7 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
   // S12/S21A, not a sentence that happens to contain the word slab.
   const unresolvedSlabMarks = slabMarks
     .filter((mark) => /^S\d+[A-Z]?$/.test(mark.text))
-    .filter((mark) => !acceptedPanels.some((panel) => pointInsideBox(mark, panel.box) && pointInsidePolygon(mark, panel.polygon)));
+    .filter((mark) => !acceptedPanels.some((panel) => markMatchesFace(mark, panel, SLAB_MARK_SNAP_TOLERANCE_MM)));
   const unresolvedMarks = xrefDependentUnresolvedMarks(entities, unresolvedSlabMarks, options.unresolvedMarks || {});
 
   return {
