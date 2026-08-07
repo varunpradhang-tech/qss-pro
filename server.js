@@ -2424,7 +2424,13 @@ function referencePanelReviewRows(rows, note = "") {
     }));
 }
 
-function dxfTextEntity({ handle, owner, layer, text, x, y, height = 650, color = 7, rotation = 0 }) {
+function dxfTextEntity({ handle, owner, layer, text, x, y, height = 650, color = 7, rotation = 0, centered = false }) {
+  // Plain TEXT defaults to left/baseline justification, so it starts AT (x,y) and runs up-and-right
+  // from there rather than being centered on it - fine for an offset label, but wrong for a number
+  // meant to sit centered inside a circle marker. Horizontal=1 (center) + vertical=2 (middle), with
+  // the second alignment point (11/21/31) matching the insertion point, centers it on that point.
+  const xStr = String(Math.round(x * 1000) / 1000);
+  const yStr = String(Math.round(y * 1000) / 1000);
   return [
     "0", "TEXT",
     ...(handle ? ["5", handle] : []),
@@ -2433,15 +2439,17 @@ function dxfTextEntity({ handle, owner, layer, text, x, y, height = 650, color =
     "8", layer,
     "62", String(color),
     "100", "AcDbText",
-    "10", String(Math.round(x * 1000) / 1000),
-    "20", String(Math.round(y * 1000) / 1000),
+    "10", xStr,
+    "20", yStr,
     "30", "0.0",
     "40", String(height),
     "1", text,
     "50", String(rotation),
     "41", "1.0",
     "7", "STANDARD",
+    ...(centered ? ["72", "1", "11", xStr, "21", yStr, "31", "0.0"] : []),
     "100", "AcDbText",
+    ...(centered ? ["73", "2"] : []),
   ].join("\r\n");
 }
 
@@ -3125,6 +3133,7 @@ async function createMarkedReferenceDrawing(entityPath, fileName, tempDir, optio
           y: labelY,
           height: panelLabelHeight,
           color: 3,
+          centered: true,
         }));
       }
     }
@@ -4570,13 +4579,28 @@ function finalQuantityRows(rows, itemType) {
       y: ys.length ? ys.reduce((sum, value) => sum + value, 0) / ys.length : Number.NEGATIVE_INFINITY,
     };
   };
-  const sortedPanels = deoverlappedPanels.slice().sort((a, b) => {
-    const pa = panelSortValue(a);
-    const pb = panelSortValue(b);
-    if (Number.isFinite(pa.y) && Number.isFinite(pb.y) && Math.abs(pb.y - pa.y) > 500) return pb.y - pa.y;
-    if (Number.isFinite(pa.x) && Number.isFinite(pb.x) && Math.abs(pa.x - pb.x) > 500) return pa.x - pb.x;
-    return 0;
-  });
+  // A pairwise "is this pair within 500mm vertically" comparator is not transitive - panel A can be
+  // "same row" as B, and B "same row" as C, while A and C fall on opposite sides of the 500mm cutoff.
+  // Array.sort assumes a transitive order, so a non-transitive comparator produces a numbering
+  // sequence that visually jumps around the plan (e.g. P9 on the far left, P10 on the far right).
+  // Bucketing each panel into a row band in one top-to-bottom pass - instead of comparing every pair
+  // against each other - keeps the ordering consistent, then each band is sorted left-to-right.
+  const rowBandToleranceMm = 900;
+  const withCenters = deoverlappedPanels.map((row) => ({ row, ...panelSortValue(row) }));
+  const byYDescending = withCenters.slice().sort((a, b) => b.y - a.y);
+  const rowBands = [];
+  for (const item of byYDescending) {
+    const band = rowBands.find((candidate) => Math.abs(candidate.y - item.y) <= rowBandToleranceMm);
+    if (band) {
+      band.items.push(item);
+      band.y = band.items.reduce((sum, entry) => sum + entry.y, 0) / band.items.length;
+    } else {
+      rowBands.push({ y: item.y, items: [item] });
+    }
+  }
+  rowBands.sort((a, b) => b.y - a.y);
+  const sortedPanels = rowBands.flatMap((band) =>
+    band.items.slice().sort((a, b) => a.x - b.x).map((item) => item.row));
   return sortedPanels.map((row, index) => ({
     ...row,
     name: `P${index + 1}`,
