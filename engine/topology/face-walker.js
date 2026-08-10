@@ -17,6 +17,51 @@ function overlapArea(a, b) {
   return overlap1d(a.minX, a.maxX, b.minX, b.maxX) * overlap1d(a.minY, a.maxY, b.minY, b.maxY);
 }
 
+function polygonBoundsMm(polygon) {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of polygon) {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+  }
+  return { minX, maxX, minY, maxY };
+}
+
+// A support's bounding box can hugely overstate its real material (e.g. a staircase's
+// stringer/waist-slab walls traced as one many-vertex polyline, boxed into a rectangle that
+// spans the whole stairwell including its open landing). Sampling the true polygon instead of
+// the box keeps a real slab that merely sits inside that box - but outside the actual solid
+// shape - from being misread as "covered by structure".
+function boxPolygonOverlapAreaMm2(box, polygon) {
+  const pb = polygonBoundsMm(polygon);
+  const minX = Math.max(box.minX, pb.minX);
+  const maxX = Math.min(box.maxX, pb.maxX);
+  const minY = Math.max(box.minY, pb.minY);
+  const maxY = Math.min(box.maxY, pb.maxY);
+  if (maxX <= minX || maxY <= minY) return 0;
+  const samplesPerAxis = 40;
+  const stepX = Math.max(10, (maxX - minX) / samplesPerAxis);
+  const stepY = Math.max(10, (maxY - minY) / samplesPerAxis);
+  let inside = 0;
+  let total = 0;
+  for (let x = minX + stepX / 2; x < maxX; x += stepX) {
+    for (let y = minY + stepY / 2; y < maxY; y += stepY) {
+      total += 1;
+      if (pointInsidePolygon({ x, y }, polygon)) inside += 1;
+    }
+  }
+  if (!total) return 0;
+  return (inside / total) * (maxX - minX) * (maxY - minY);
+}
+
+function supportOverlapAreaMm2(box, support) {
+  if (support.polygon && support.polygon.length >= 4) {
+    return boxPolygonOverlapAreaMm2(box, support.polygon);
+  }
+  return overlapArea(box, support.box);
+}
+
 function removeOverlappingSlabPanels(panels, options = {}) {
   const minOverlapSqm = Number(options.minOverlapSqm || 0.05);
   const minOverlapRatio = Number(options.minOverlapRatio || 0.05);
@@ -597,9 +642,29 @@ function nearestGridBand(grid, box) {
 
 function cutoutAreaForFace(face, cutouts) {
   const boundaryArea = cutouts.boundaryVoids.reduce((sum, cutout) => sum + overlapArea(face.box, cutout.box) / 1e6, 0);
-  const textArea = cutouts.textVoids
-    .filter((text) => pointInsideBox(text, face.box) || pointInsidePolygon(text, face.polygon))
-    .reduce((sum, text) => sum + text.areaSqm, 0);
+  const textArea = cutouts.textVoids.reduce((sum, text) => {
+    // A cutout callout's insertion point landing inside a face doesn't mean the whole labelled
+    // opening does - a narrow strip can carry a shaft's label near its edge while most of the
+    // shaft's own footprint actually sits in the room next door. Build the void's approximate
+    // footprint from its stated dimensions, centered on the label point, and deduct only the
+    // portion that geometrically overlaps this face.
+    if (text.dimensions && text.dimensions.length) {
+      const overlapSqm = text.dimensions.reduce((acc, dim) => {
+        const halfWidth = dim.lengthMm / 2;
+        const halfHeight = dim.breadthMm / 2;
+        const voidBox = {
+          minX: text.x - halfWidth, maxX: text.x + halfWidth,
+          minY: text.y - halfHeight, maxY: text.y + halfHeight,
+        };
+        return acc + overlapArea(face.box, voidBox) / 1e6;
+      }, 0);
+      return sum + Math.min(text.areaSqm, overlapSqm);
+    }
+    if (pointInsideBox(text, face.box) || pointInsidePolygon(text, face.polygon)) {
+      return sum + text.areaSqm;
+    }
+    return sum;
+  }, 0);
   return Math.max(boundaryArea, textArea);
 }
 
@@ -693,7 +758,7 @@ function shouldReviewSkippedSlabFace(face, supportBoxes, options = {}) {
   if (areaSqm < Number(options.minAreaSqm || 4)) return false;
   if (widthM < Number(options.minDimensionM || 0.8) || heightM < Number(options.minDimensionM || 0.8)) return false;
   if (!face.edgeTypes.includes("beam_face")) return false;
-  const supportOverlapSqm = supportBoxes.reduce((sum, support) => sum + overlapArea(face.box, support.box) / 1e6, 0);
+  const supportOverlapSqm = supportBoxes.reduce((sum, support) => sum + supportOverlapAreaMm2(face.box, support) / 1e6, 0);
   if (supportOverlapSqm / Math.max(areaSqm, 0.001) > Number(options.maxSupportOverlapRatio || 0.35)) return false;
   return true;
 }
@@ -761,7 +826,7 @@ function solveSlabPanelsByFaceWalking(entities, options = {}) {
       continue;
     }
 
-    const supportOverlapSqm = supportBoxes.reduce((sum, support) => sum + overlapArea(face.box, support.box) / 1e6, 0);
+    const supportOverlapSqm = supportBoxes.reduce((sum, support) => sum + supportOverlapAreaMm2(face.box, support) / 1e6, 0);
     if (supportOverlapSqm / Math.max(areaSqm, 0.001) > 0.65) {
       if (shouldReviewSkippedSlabFace(face, supportBoxes, options.skippedFaceAudit || {})) {
         review.push(makeSkippedSlabReviewRow(face, grid, "Possible missed slab panel: high support overlap."));

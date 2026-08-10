@@ -142,6 +142,27 @@ function isXrefEntity(entity) {
   return looksXrefBound(entity?.sourceBlock) || looksXrefBound(entity?.layer);
 }
 
+// Repeated-floor drawings commonly xref a tower's OWN typical core/column layout onto every
+// level instead of redrawing it (e.g. "XB_Tower 2$0$t2 core typ", "XR_T2_Column_Typ-Fl") rather
+// than pulling in genuinely foreign geometry (an adjacent tower's own plan, present only because
+// the site is drawn on one shared basement grid). isXrefEntity can't tell those apart; this can,
+// by checking whether the reference names this tower specifically and no other.
+function isOwnTowerXrefReference(entity, towerToken) {
+  if (!towerToken) return false;
+  const source = `${entity?.layer || ""} ${entity?.sourceBlock || ""}`;
+  const escaped = String(towerToken).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ownPattern = new RegExp(`(?:^|[^A-Za-z0-9])(?:tower\\s*)?${escaped}(?:[^A-Za-z0-9]|$)`, "i");
+  const otherTowerPattern = /(?:^|[^A-Za-z0-9])(?:tower\s*(\d+)|T(\d+))(?:[^A-Za-z0-9]|$)/gi;
+  if (!ownPattern.test(source)) return false;
+  const ownNumber = String(towerToken).match(/\d+/)?.[0];
+  let match;
+  while ((match = otherTowerPattern.exec(source))) {
+    const foundNumber = match[1] || match[2];
+    if (ownNumber && foundNumber && foundNumber !== ownNumber) return false;
+  }
+  return true;
+}
+
 function isHorizontal(entity, toleranceRatio = 0.03) {
   return Math.abs((entity.y2 || 0) - (entity.y || 0)) <= Math.abs((entity.x2 || 0) - (entity.x || 0)) * toleranceRatio;
 }
@@ -392,16 +413,39 @@ function extractSupportBoxes(entities) {
     });
 }
 
+// Non-xref layer names in this drawing carry the tower token directly (e.g. "BEAM NO T2",
+// "SLABS NO T2"), so the primary tower can be read straight off whichever layers the trusted
+// (non-xref) geometry actually uses, without hardcoding a specific project's tower number.
+function detectPrimaryTowerToken(entities) {
+  const counts = {};
+  for (const entity of entities) {
+    if (isXrefEntity(entity)) continue;
+    const match = String(entity.layer || "").match(/\bT(\d+)\b/i);
+    if (match) counts[match[1]] = (counts[match[1]] || 0) + 1;
+  }
+  let best = null;
+  let bestCount = 0;
+  for (const [num, count] of Object.entries(counts)) {
+    if (count > bestCount) {
+      best = num;
+      bestCount = count;
+    }
+  }
+  return best ? `T${best}` : null;
+}
+
 function extractCutoutVoids(entities) {
+  const towerToken = detectPrimaryTowerToken(entities);
+  const trusted = (entity) => !isXrefEntity(entity) || isOwnTowerXrefReference(entity, towerToken);
   const cutoutTexts = entities
     .filter((entity) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(entity.type) && entity.text)
-    .filter((entity) => !isXrefEntity(entity))
+    .filter(trusted)
     .map((entity) => ({ ...entity, clean: cleanCadText(entity.text).toUpperCase() }))
     .filter((entity) => /CUT\s*OUT|CUTOUT|OPEN\s*TO\s*SKY|\bOTS\b|SHAFT|VOID/.test(entity.clean));
 
   const cutoutBoxes = entities
     .filter((entity) => ["LWPOLYLINE", "POLYLINE", "HATCH"].includes(entity.type) && entity.vertices?.length >= 4)
-    .filter((entity) => !isXrefEntity(entity))
+    .filter(trusted)
     .map((entity) => ({ entity, box: entityBox(entity), layer: normalizeLayer(entity.layer) }))
     .filter(({ box }) => boxArea(box) >= 0.02e6)
     .filter(({ box }) => (box.maxX - box.minX) <= 80000 && (box.maxY - box.minY) <= 80000)
