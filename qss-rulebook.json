@@ -333,9 +333,12 @@
       "summary": "Steel takeoff must export in bar bending schedule format, not as panel area or member area multiplied as steel weight.",
       "acceptance": [
         "Slab steel rows use panel/member headings followed by bottom, top, curtailed, and distribution bar rows.",
+        "Slab panel dimensions come from the framing plan P-panel/written panel dimensions; S1/S1A/S2 schedule marks define thickness, one-way/two-way, and bottom bar dia/spacing.",
+        "Top slab marks t1/t2/t3/t4/t5 are resolved from the drawing reinforcement schedule before BBS rows are prepared.",
         "Beam steel rows use beam/member headings followed by main, extra, stirrup, link, and SFR rows.",
         "BBS columns include shape, item count, dia, spacing, dimensions A-E, bends, lap, bar count, cutting length, total length by dia, and remarks.",
-        "Steel weight is calculated from total bar length by dia using d^2/162 kg per metre."
+        "Steel weight is calculated from total bar length by dia using d^2/162 kg per metre.",
+        "Clean rows keep remarks blank; uncertain schedule or geometry rows say need review."
       ],
       "source": "User provided slab and beam BBS reference formats."
     },

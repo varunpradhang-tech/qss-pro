@@ -1,4 +1,4 @@
-const QSS_APP_RULE_VERSION = "qss-pro-accuracy-2026-07-29-strict-boundary-panels-v115";
+const QSS_APP_RULE_VERSION = "qss-pro-accuracy-2026-07-29-strict-boundary-panels-v117-bbs-hard-lock";
 const CAD_EXTRACTION_TIMEOUT_MS = 900000;
 
 const state = {
@@ -125,7 +125,7 @@ const quantityRules = {
     calculate: (row) => Math.max(row.length * row.breadth - row.openings, 0) * row.nos,
   },
   slab_steel: {
-    label: "Slab steel",
+    label: "Slab steel BBS",
     unit: "kg",
     calculate: (row) => {
       const spacing = row.spacing > 0 ? row.spacing / 1000 : 0.15;
@@ -538,6 +538,15 @@ function getSelectedQuantityKey() {
   return elements.quantityRule.value || "column_concrete";
 }
 
+function isSteelBbsRuleKey(key = getSelectedQuantityKey()) {
+  return /steel|bbs/i.test(String(key || ""));
+}
+
+function currentDownloadIsBbs(downloads = state.currentDownloads) {
+  return downloads?.workbookType === "BBS" ||
+    /BBS|steel/i.test(`${downloads?.excelName || ""} ${getSelectedQuantityKey()}`);
+}
+
 function isPremiumUser() {
   return elements.userPlan.value === "premium";
 }
@@ -597,6 +606,10 @@ function syncPremiumDownloads() {
   if (!elements.premiumDownloadPanel) return;
   const premium = isPremiumUser();
   const downloads = state.currentDownloads;
+  const activeRule = getSelectedQuantityKey();
+  const bbsDownload = isSteelBbsRuleKey(activeRule) || currentDownloadIsBbs(downloads);
+  const finalExcelText = bbsDownload ? "Download BBS Excel sheet" : "Download Excel MB sheet";
+  const reviewExcelText = bbsDownload ? "Download review BBS Excel" : "Download review Excel";
   const lockedReviewReferenceReady = lockedReviewReferenceHasMarks(downloads);
   elements.premiumDownloadPanel.hidden = !premium && !lockedReviewReferenceReady;
   const excelReady = premium && downloads?.excelUrl;
@@ -608,11 +621,11 @@ function syncPremiumDownloads() {
     if (excelReady) {
       elements.downloadExcel.href = downloads.excelUrl;
       elements.downloadExcel.download = downloads.excelName || "";
-      elements.downloadExcel.textContent = downloads.reviewExcel ? "Download review Excel" : "Download Excel MB sheet";
+      elements.downloadExcel.textContent = downloads.reviewExcel ? reviewExcelText : finalExcelText;
     } else {
       elements.downloadExcel.removeAttribute("href");
       elements.downloadExcel.removeAttribute("download");
-      elements.downloadExcel.textContent = "Download Excel MB sheet";
+      elements.downloadExcel.textContent = finalExcelText;
     }
   }
   if (elements.downloadReferenceDwg) {
@@ -2211,6 +2224,19 @@ function loadSample() {
 function exportCsv() {
   if (!isPremiumUser()) {
     elements.premiumMessage.hidden = false;
+    return;
+  }
+
+  if (isSteelBbsRuleKey()) {
+    const downloads = state.currentDownloads;
+    if (currentDownloadIsBbs(downloads) && downloads?.excelUrl) {
+      const link = document.createElement("a");
+      link.href = downloads.excelUrl;
+      link.download = downloads.excelName || "";
+      link.click();
+      return;
+    }
+    window.alert("Steel BBS uses the BBS Excel format. Click Extract Quantity, then use Download BBS Excel sheet. Current-table CSV is disabled for steel BBS.");
     return;
   }
 

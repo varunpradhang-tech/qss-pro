@@ -3846,6 +3846,39 @@ function rowsWithMbQuantities(rows, itemType, quantityRule, beamCapMode = "inclu
   });
 }
 
+function bbsWeightKgFromEntries(entries = []) {
+  return round3(entries
+    .filter((entry) => entry.kind === "bar")
+    .reduce((sum, entry) => {
+      const dia = Math.max(Number(entry.dia || 0), 0);
+      const lengthM = Math.max(Number(entry.totalLengthM || 0), 0);
+      return sum + (lengthM * dia * dia / 162);
+    }, 0));
+}
+
+function bbsQuantityForRow(row, itemType) {
+  const entries = normaliseQuantityItemType(itemType) === "beam"
+    ? beamBbsRowsForMember(row, 0)
+    : slabBbsRowsForPanel(row, 0);
+  return bbsWeightKgFromEntries(entries);
+}
+
+function rowsWithBbsQuantities(rows, itemType, quantityRule, beamCapMode = "included") {
+  return rows.map((row) => {
+    const quantity = bbsQuantityForRow(row, itemType);
+    return {
+      ...row,
+      mbQuantity: quantity,
+      serverQuantity: quantity,
+      serverQuantityUnit: "kg",
+      serverQuantityRule: quantityRule,
+      serverQuantityItemType: itemType,
+      serverQuantityBeamCapMode: beamCapMode,
+      bbsQuantity: true,
+    };
+  });
+}
+
 function mbHeight(row, itemType, quantityRule) {
   if (itemType === "beam") return Number(row.height || 0);
   if (/concrete/i.test(quantityRule)) return Number(row.height || 0.15);
@@ -3861,6 +3894,1013 @@ function mbDescription(row, itemType) {
     return `${name}${size}`;
   }
   return name;
+}
+
+const BEAM_BBS_DIA_COLUMNS = [8, 10, 12, 16, 20, 25];
+const SLAB_BBS_DIA_COLUMNS = [8, 10, 12, 16, 20, 25, 32];
+
+const SLAB_TOP_STEEL_MARK_SCHEDULE = {
+  t1: { dia: 8, spacing: 250 },
+  t2: { dia: 8, spacing: 200 },
+  t3: { dia: 8, spacing: 175 },
+  t4: { dia: 8, spacing: 150 },
+  t5: { dia: 8, spacing: 125 },
+};
+
+const SLAB_MARK_BBS_SCHEDULE = {
+  S1: {
+    thicknessMm: 150,
+    way: "one",
+    shortFull: { dia: 10, spacing: 200 },
+    shortCurtail: { dia: 10, spacing: 200 },
+    longFull: { dia: 8, spacing: 200 },
+    longCurtail: null,
+  },
+  S1A: {
+    thicknessMm: 150,
+    way: "two",
+    shortFull: { dia: 8, spacing: 200 },
+    shortCurtail: { dia: 8, spacing: 200 },
+    longFull: { dia: 8, spacing: 250 },
+    longCurtail: { dia: 8, spacing: 250 },
+  },
+  S2: {
+    thicknessMm: 125,
+    way: "two",
+    shortFull: { dia: 8, spacing: 250 },
+    shortCurtail: { dia: 8, spacing: 250 },
+    longFull: { dia: 8, spacing: 250 },
+    longCurtail: { dia: 8, spacing: 250 },
+  },
+  S3: {
+    thicknessMm: 200,
+    way: "two",
+    shortFull: { dia: 10, spacing: 200 },
+    shortCurtail: { dia: 10, spacing: 200 },
+    longFull: { dia: 8, spacing: 200 },
+    longCurtail: { dia: 8, spacing: 200 },
+  },
+  S4: {
+    thicknessMm: 150,
+    way: "two",
+    shortFull: { dia: 10, spacing: 250 },
+    shortCurtail: { dia: 10, spacing: 250 },
+    longFull: { dia: 8, spacing: 200 },
+    longCurtail: { dia: 8, spacing: 200 },
+  },
+  S5: {
+    thicknessMm: 125,
+    way: "two",
+    shortFull: { dia: 8, spacing: 200 },
+    shortCurtail: { dia: 8, spacing: 200 },
+    longFull: { dia: 8, spacing: 200 },
+    longCurtail: null,
+  },
+  S6: {
+    thicknessMm: 175,
+    way: "two",
+    shortFull: { dia: 10, spacing: 250 },
+    shortCurtail: { dia: 10, spacing: 250 },
+    longFull: { dia: 10, spacing: 250 },
+    longCurtail: { dia: 10, spacing: 250 },
+  },
+};
+
+function isSteelBbsQuantityRule(quantityRule = "") {
+  return /steel|bbs/i.test(String(quantityRule || ""));
+}
+
+function normaliseQuantityItemType(itemType = "") {
+  return String(itemType || "").trim().toLowerCase();
+}
+
+function isSlabSteelBbsTakeoff(itemType = "", quantityRule = "") {
+  const item = normaliseQuantityItemType(itemType);
+  const rule = String(quantityRule || "").trim().toLowerCase();
+  return isSteelBbsQuantityRule(rule) && (item === "slab" || item === "raft" || /(^|_)slab(_|$)|(^|_)raft(_|$)/.test(rule));
+}
+
+function isBeamSteelBbsTakeoff(itemType = "", quantityRule = "") {
+  const item = normaliseQuantityItemType(itemType);
+  const rule = String(quantityRule || "").trim().toLowerCase();
+  return isSteelBbsQuantityRule(rule) && (item === "beam" || /(^|_)beam(_|$)/.test(rule));
+}
+
+function isSteelBbsTakeoff(itemType = "", quantityRule = "") {
+  return isSlabSteelBbsTakeoff(itemType, quantityRule) || isBeamSteelBbsTakeoff(itemType, quantityRule);
+}
+
+function hasBbsQuantityRows(rows = []) {
+  return rows.some((row) => row?.bbsQuantity || /steel|bbs/i.test(String(row?.serverQuantityRule || "")));
+}
+
+function shouldUseSlabBbsWorkbook(packageInfo = {}) {
+  const itemType = packageInfo.itemType || "";
+  const quantityRule = packageInfo.quantityRule || "";
+  const item = normaliseQuantityItemType(itemType);
+  return isSlabSteelBbsTakeoff(itemType, quantityRule) ||
+    (hasBbsQuantityRows(packageInfo.rows) && (item === "slab" || item === "raft" || /slab|raft/i.test(String(quantityRule))));
+}
+
+function shouldUseBeamBbsWorkbook(packageInfo = {}) {
+  const itemType = packageInfo.itemType || "";
+  const quantityRule = packageInfo.quantityRule || "";
+  const item = normaliseQuantityItemType(itemType);
+  return isBeamSteelBbsTakeoff(itemType, quantityRule) ||
+    (hasBbsQuantityRows(packageInfo.rows) && (item === "beam" || /beam/i.test(String(quantityRule))));
+}
+
+function shouldUseBbsWorkbook(packageInfo = {}) {
+  return shouldUseSlabBbsWorkbook(packageInfo) ||
+    shouldUseBeamBbsWorkbook(packageInfo) ||
+    isSteelBbsQuantityRule(packageInfo.quantityRule || "") ||
+    hasBbsQuantityRows(packageInfo.rows || []);
+}
+
+function workbookTypeForPackage(packageInfo = {}) {
+  return shouldUseBbsWorkbook(packageInfo) ? "BBS" : "MB";
+}
+
+function drawingLengthToMm(value, fallback = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return fallback;
+  return number > 100 ? Math.round(number) : Math.round(number * 1000);
+}
+
+function bbsMetresFromMm(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return 0;
+  return Number((number / 1000).toFixed(3));
+}
+
+function normaliseBbsSpacing(value, fallback = 200) {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return fallback;
+  return number > 10 ? Math.round(number) : Math.round(number * 1000);
+}
+
+function bbsSpacingForCount(spacing) {
+  const text = String(spacing || "").trim();
+  const values = text.match(/\d+(?:\.\d+)?/g);
+  if (values && values.length) {
+    const parsed = values.map((item) => Number(item)).filter((item) => item > 0);
+    if (parsed.length) return Math.max(...parsed);
+  }
+  const number = Number(spacing);
+  return Number.isFinite(number) && number > 0 ? number : 200;
+}
+
+function cloneBbsSpec(spec) {
+  if (!spec) return null;
+  return {
+    dia: Math.round(Number(spec.dia || 0)),
+    spacing: normaliseBbsSpacing(spec.spacing, 200),
+  };
+}
+
+function bbsSpecText(spec) {
+  const parsed = cloneBbsSpec(spec);
+  if (!parsed || !parsed.dia || !parsed.spacing) return "";
+  return `T${parsed.dia} @ ${parsed.spacing}`;
+}
+
+function parseBbsRebarSpec(value, fallback = { dia: 8, spacing: 200 }) {
+  const fallbackSpec = cloneBbsSpec(fallback);
+  if (value === null || value === undefined || value === "") return fallbackSpec;
+  if (typeof value === "object") {
+    const objectSpec = value.spec || value.text || value.rebar || value.bar || value;
+    if (objectSpec !== value) return parseBbsRebarSpec(objectSpec, fallbackSpec);
+    const dia = Number(value.dia || value.barDia || value.diameter || value.diameterMm || fallbackSpec?.dia || 8);
+    const spacing = normaliseBbsSpacing(value.spacing || value.spacingMm || value.centre || fallbackSpec?.spacing || 200, fallbackSpec?.spacing || 200);
+    return { dia: Math.round(dia), spacing };
+  }
+  const text = String(value || "").trim();
+  if (!text || /^[-–—]$/.test(text)) return null;
+  const match = text.match(/T\s*(\d+(?:\.\d+)?)\s*@\s*(\d+(?:\.\d+)?)/i) ||
+    text.match(/(?:#|dia)?\s*(\d+(?:\.\d+)?)\s*(?:mm)?\s*@\s*(\d+(?:\.\d+)?)/i);
+  if (!match) return fallbackSpec;
+  return {
+    dia: Math.round(Number(match[1])),
+    spacing: normaliseBbsSpacing(match[2], fallbackSpec?.spacing || 200),
+  };
+}
+
+function roundBbsDimensionMm(value, step = 5) {
+  const number = Number(value || 0);
+  const roundStep = Math.max(Number(step || 1), 1);
+  if (!Number.isFinite(number) || number <= 0) return 0;
+  return Math.round(number / roundStep) * roundStep;
+}
+
+function bbsBarCount(runMm, spacing, fallback = 1) {
+  const run = Number(runMm || 0);
+  const spacingMm = bbsSpacingForCount(spacing);
+  if (!run || !spacingMm) return fallback;
+  return Math.max(Math.ceil(run / spacingMm) + 1, fallback);
+}
+
+function bbsShapeHtml(shape) {
+  if (shape === "stirrup") return '<span class="shape-stirrup"></span>';
+  if (shape === "u") return '<span class="shape-u"></span>';
+  return '<span class="shape-line"></span>';
+}
+
+function bbsDiaTotalCellsHtml(dia, totalLengthM, diaColumns = BEAM_BBS_DIA_COLUMNS) {
+  const barDia = Math.round(Number(dia || 0));
+  return diaColumns
+    .map((columnDia) => `<td>${columnDia === barDia ? formatNumber(totalLengthM, 3) : ""}</td>`)
+    .join("");
+}
+
+function bbsCuttingLengthFromParts(partsMm = [], bendCount = 0, dia = 0) {
+  const gross = partsMm.reduce((sum, value) => sum + Math.max(Number(value || 0), 0), 0);
+  const bendDeduction = Math.max(Number(bendCount || 0), 0) * Math.max(Number(dia || 0), 0);
+  return bbsMetresFromMm(Math.max(gross - bendDeduction, 0));
+}
+
+function beamBbsDataItem({
+  description,
+  shape = "straight",
+  noOfItem = 1,
+  dia,
+  spacing = 1,
+  dimensions = [],
+  bends = 0,
+  lapNos = 0,
+  lap = 0,
+  noOfBar = 1,
+  cuttingLengthM,
+  remarks = "",
+}) {
+  const dims = [0, 0, 0, 0, 0].map((_, index) => Number(dimensions[index] || 0));
+  const cutting = Number.isFinite(Number(cuttingLengthM))
+    ? Number(cuttingLengthM)
+    : bbsCuttingLengthFromParts(dims, bends, dia);
+  const totalLengthM = Number((Math.max(cutting, 0) * Math.max(Number(noOfBar || 0), 0) * Math.max(Number(noOfItem || 1), 0)).toFixed(3));
+  return {
+    kind: "bar",
+    description,
+    shape,
+    noOfItem,
+    dia: Math.round(Number(dia || 0)),
+    spacing,
+    dimensions: dims,
+    bends,
+    lapNos,
+    lap,
+    noOfBar,
+    cuttingLengthM: cutting,
+    totalLengthM,
+    remarks,
+  };
+}
+
+function beamBbsRowsForMember(row, index) {
+  const lengthMm = drawingLengthToMm(row.length);
+  const widthMm = drawingLengthToMm(row.breadth);
+  const depthMm = drawingLengthToMm(row.height);
+  if (!lengthMm || !widthMm || !depthMm) return [];
+
+  const name = row.name || row.panelNo || `Beam ${index + 1}`;
+  const mainDia = Number(row.mainDia || row.bottomMainDia || row.bottomDia || row.dia || 20);
+  const topDia = Number(row.topMainDia || row.topDia || 12);
+  const extraDia = Number(row.bottomExtraDia || row.extraDia || mainDia);
+  const stirrupDia = Number(row.stirrupDia || row.shearDia || row.tieDia || 8);
+  const mainAnchorage = drawingLengthToMm(row.mainAnchorageMm || row.barEndAnchorageMm || 300, 300);
+  const topAnchorage = drawingLengthToMm(row.topAnchorageMm || Math.round(depthMm * 0.74), Math.round(depthMm * 0.74));
+  const bottomExtraLength = drawingLengthToMm(row.bottomExtraLength || row.extraLength || row.bottomExtraLengthM, Math.round(lengthMm * 0.84));
+  const stirrupWidthCover = drawingLengthToMm(row.stirrupWidthCoverMm || row.sideCoverMm || 30, 30);
+  const stirrupDepthCover = drawingLengthToMm(row.stirrupDepthCoverMm || row.coverMm || 40, 40);
+  const stirrupA = Math.max(widthMm - (2 * stirrupWidthCover), 0);
+  const stirrupB = Math.max(depthMm - (2 * stirrupDepthCover), 0);
+  const hook = drawingLengthToMm(row.stirrupHookMm || 150, 150);
+  const stirrupSpacing = normaliseBbsSpacing(row.stirrupSpacingText || row.stirrupSpacing || row.spacing, 200);
+  const stirrupLegs = Math.max(Math.round(Number(row.stirrupLegs || row.legs || 3)), 2);
+  const needsReview = row.needsReview ? "need review" : "";
+
+  const rows = [
+    {
+      kind: "member",
+      sr: `1.${index + 1}`,
+      description: name,
+      lengthMm,
+      widthMm,
+      depthMm,
+      remarks: needsReview,
+    },
+    beamBbsDataItem({
+      description: "Bottom Main Bar",
+      shape: "u",
+      dia: mainDia,
+      spacing: 1,
+      dimensions: [mainAnchorage, lengthMm, mainAnchorage],
+      bends: 2,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.mainLapMm || mainDia * 40, mainDia * 40),
+      noOfBar: Math.max(Number(row.bottomMainBars || row.mainBars || 2), 1),
+      remarks: needsReview,
+    }),
+    beamBbsDataItem({
+      description: "Bottom Extra Bar",
+      shape: "straight",
+      dia: extraDia,
+      spacing: 1,
+      dimensions: [0, bottomExtraLength, 0],
+      bends: 0,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.extraLapMm || extraDia * 40, extraDia * 40),
+      noOfBar: Math.max(Number(row.bottomExtraBars || row.extraBars || 2), 1),
+      cuttingLengthM: bbsMetresFromMm(bottomExtraLength),
+      remarks: needsReview,
+    }),
+    beamBbsDataItem({
+      description: "Top Main Bar",
+      shape: "u",
+      dia: topDia,
+      spacing: 1,
+      dimensions: [topAnchorage, lengthMm, topAnchorage],
+      bends: 2,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.topLapMm || topDia * 40, topDia * 40),
+      noOfBar: Math.max(Number(row.topMainBars || row.topBars || 2), 1),
+      remarks: needsReview,
+    }),
+  ];
+
+  if (row.topExtraDia || row.topExtraLength || row.topExtraBars) {
+    const topExtraDia = Number(row.topExtraDia || row.extraDia || topDia);
+    const topExtraLength = drawingLengthToMm(row.topExtraLength || row.topExtraLengthM, Math.round(lengthMm * 0.35));
+    rows.push(beamBbsDataItem({
+      description: "Top Extra Bar",
+      shape: "straight",
+      dia: topExtraDia,
+      spacing: 1,
+      dimensions: [0, topExtraLength, 0],
+      bends: 0,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.topExtraLapMm || topExtraDia * 40, topExtraDia * 40),
+      noOfBar: Math.max(Number(row.topExtraBars || 2), 1),
+      cuttingLengthM: bbsMetresFromMm(topExtraLength),
+      remarks: needsReview,
+    }));
+  }
+
+  rows.push(
+    { kind: "heading", description: `Shear Stirrups ${stirrupLegs}L` },
+    beamBbsDataItem({
+      description: "Outer",
+      shape: "stirrup",
+      noOfItem: 1,
+      dia: stirrupDia,
+      spacing: stirrupSpacing,
+      dimensions: [stirrupA, stirrupB, stirrupA, stirrupB, hook],
+      bends: 6,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.stirrupLapMm || stirrupDia * 10, stirrupDia * 10),
+      noOfBar: bbsBarCount(lengthMm, stirrupSpacing, 1),
+      remarks: needsReview,
+    }),
+  );
+
+  if (stirrupLegs >= 5 || row.innerStirrup || row.linkDia || row.sfrDia) {
+    const innerDia = Number(row.innerStirrupDia || stirrupDia);
+    rows.push(beamBbsDataItem({
+      description: "Inner",
+      shape: "stirrup",
+      noOfItem: 1,
+      dia: innerDia,
+      spacing: stirrupSpacing,
+      dimensions: [Math.max(stirrupA - 55, 0), stirrupB, Math.max(stirrupA - 55, 0), stirrupB, hook],
+      bends: 6,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.stirrupLapMm || innerDia * 10, innerDia * 10),
+      noOfBar: bbsBarCount(lengthMm, stirrupSpacing, 1),
+      remarks: needsReview,
+    }));
+    const linkDia = Number(row.linkDia || stirrupDia);
+    rows.push(beamBbsDataItem({
+      description: "Link",
+      shape: "straight",
+      noOfItem: 1,
+      dia: linkDia,
+      spacing: stirrupSpacing,
+      dimensions: [Math.max(widthMm - 160, 0), Math.max(widthMm - 160, 0)],
+      bends: 2,
+      lapNos: 0,
+      lap: drawingLengthToMm(row.linkLapMm || linkDia * 10, linkDia * 10),
+      noOfBar: bbsBarCount(lengthMm, stirrupSpacing, 1),
+      remarks: needsReview,
+    }));
+  }
+
+  return rows;
+}
+
+function steelBbsRowHtml(entry, diaColumns = BEAM_BBS_DIA_COLUMNS) {
+  if (entry.kind === "member") {
+    return `
+      <tr class="member-row">
+        <td>${escapeHtml(entry.sr)}</td>
+        <td>${escapeHtml(entry.description)}</td>
+        <td>${formatNumber(entry.lengthMm, 0)}</td>
+        <td>${formatNumber(entry.widthMm, 0)}</td>
+        <td></td>
+        <td>${formatNumber(entry.depthMm, 0)}</td>
+        <td colspan="5"></td>
+        <td></td>
+        <td colspan="2"></td>
+        <td></td>
+        <td></td>
+        ${diaColumns.map(() => "<td></td>").join("")}
+        <td>${escapeHtml(entry.remarks || "")}</td>
+      </tr>`;
+  }
+  if (entry.kind === "heading") {
+    return `
+      <tr>
+        <td></td>
+        <td>${escapeHtml(entry.description)}</td>
+        <td colspan="${diaColumns.length + 15}"></td>
+      </tr>`;
+  }
+  const dims = [0, 1, 2, 3, 4].map((index) => entry.dimensions[index] || "");
+  return `
+    <tr>
+      <td></td>
+      <td>${escapeHtml(entry.description)}</td>
+      <td>${bbsShapeHtml(entry.shape)}</td>
+      <td>${formatNumber(entry.noOfItem, 0)}</td>
+      <td>${formatNumber(entry.dia, 0)}</td>
+      <td>${escapeHtml(entry.spacing)}</td>
+      ${dims.map((value) => `<td>${value ? formatNumber(value, 0) : ""}</td>`).join("")}
+      <td>${formatNumber(entry.bends, 0)}</td>
+      <td>${formatNumber(entry.lapNos, 0)}</td>
+      <td>${formatNumber(entry.lap, 0)}</td>
+      <td>${formatNumber(entry.noOfBar, 0)}</td>
+      <td>${formatNumber(entry.cuttingLengthM, 3)}</td>
+      ${bbsDiaTotalCellsHtml(entry.dia, entry.totalLengthM, diaColumns)}
+      <td>${escapeHtml(entry.remarks || "")}</td>
+    </tr>`;
+}
+
+function createBeamSteelBbsWorkbookHtml(packageInfo) {
+  const { rows = [], files = [], plans = [], summary = {} } = packageInfo;
+  const measuredFiles = (plans || [])
+    .filter((plan) => !plan.summary?.linkedDetailOnly)
+    .map((plan) => plan.fileName)
+    .filter(Boolean);
+  const sourceFiles = (measuredFiles.length ? measuredFiles : files.map((file) => file.name)).join(", ");
+  const floorName = rows.find((row) => row.floor)?.floor || packageInfo.floor || "Selected Floor";
+  const bbsRows = rows.flatMap((row, index) => beamBbsRowsForMember(row, index));
+  const dataRows = [
+    `<tr class="group-row"><td>1.0</td><td colspan="${BEAM_BBS_DIA_COLUMNS.length + 16}">Beams at ${escapeHtml(floorName)}</td></tr>`,
+    ...bbsRows.map((entry) => steelBbsRowHtml(entry, BEAM_BBS_DIA_COLUMNS)),
+  ].join("");
+  const totalsByDia = Object.fromEntries(BEAM_BBS_DIA_COLUMNS.map((dia) => [dia, 0]));
+  bbsRows.forEach((entry) => {
+    if (entry.kind !== "bar") return;
+    if (Object.prototype.hasOwnProperty.call(totalsByDia, entry.dia)) {
+      totalsByDia[entry.dia] += Number(entry.totalLengthM || 0);
+    }
+  });
+  const weightsByDia = Object.fromEntries(BEAM_BBS_DIA_COLUMNS.map((dia) => [
+    dia,
+    totalsByDia[dia] * ((dia * dia) / 162),
+  ]));
+  const totalWeight = Object.values(weightsByDia).reduce((sum, value) => sum + Number(value || 0), 0);
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #000; padding: 4px; font-size: 10pt; text-align: center; vertical-align: middle; }
+      th { font-weight: 700; }
+      .meta td { border: none; text-align: left; padding: 3px 6px; }
+      .group-row td { font-weight: 700; font-size: 12pt; text-align: left; }
+      .member-row td { font-weight: 700; }
+      .member-row td:nth-child(2), tbody td:nth-child(2) { text-align: left; }
+      .shape-line { display: inline-block; width: 84px; border-top: 1px solid #000; vertical-align: middle; }
+      .shape-u { display: inline-block; width: 84px; height: 14px; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle; }
+      .shape-stirrup { display: inline-block; width: 42px; height: 32px; border: 1px solid #000; vertical-align: middle; }
+    </style>
+  </head>
+  <body>
+    <table class="meta">
+      <tr><td><b>QSS Pro Beam BBS</b></td><td>${escapeHtml(sourceFiles)}</td></tr>
+      <tr><td><b>Generated</b></td><td>${escapeHtml(new Date().toLocaleString("en-IN"))}</td></tr>
+      <tr><td><b>Rows</b></td><td>${rows.length}</td></tr>
+      <tr><td><b>Review rows</b></td><td>${summary.reviewRows || 0}</td></tr>
+    </table>
+    <br />
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Sr. No</th>
+          <th rowspan="2">Description</th>
+          <th rowspan="2">Shape of bar</th>
+          <th rowspan="2">No. of item</th>
+          <th rowspan="2">Dia of bar<br />in mm</th>
+          <th rowspan="2">Spacing in<br />mm</th>
+          <th colspan="5">Dimensions in mm</th>
+          <th rowspan="2">No. of bend</th>
+          <th colspan="2">Lap</th>
+          <th rowspan="2">No. of bar</th>
+          <th rowspan="2">Cutting length (m)</th>
+          <th colspan="${BEAM_BBS_DIA_COLUMNS.length}">Total length in m</th>
+          <th rowspan="2">Remarks</th>
+        </tr>
+        <tr>
+          <th>A*</th>
+          <th>B*</th>
+          <th>C*</th>
+          <th>D*</th>
+          <th>E*</th>
+          <th>Nos</th>
+          <th>Lap</th>
+          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<th>#${dia}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${dataRows}
+        <tr class="member-row">
+          <td></td>
+          <td>Total bar length by diameter</td>
+          <td colspan="14"></td>
+          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(totalsByDia[dia], 3)}</td>`).join("")}
+          <td></td>
+        </tr>
+        <tr class="member-row">
+          <td></td>
+          <td>Total steel weight kg</td>
+          <td colspan="14"></td>
+          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(weightsByDia[dia], 3)}</td>`).join("")}
+          <td>${formatNumber(totalWeight, 3)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>`;
+}
+
+function slabBbsCuttingLengthFromParts(partsMm = [], bendCount = 0, dia = 0) {
+  const gross = partsMm.reduce((sum, value) => sum + Math.max(Number(value || 0), 0), 0);
+  const bendDeduction = Math.max(Number(bendCount || 0), 0) * Math.max(Number(dia || 0), 0) * 2;
+  return bbsMetresFromMm(Math.max(gross - bendDeduction, 0));
+}
+
+function slabBbsBarCount(runMm, spacing, fallback = 1) {
+  const run = Number(runMm || 0);
+  const spacingMm = bbsSpacingForCount(spacing);
+  if (!run || !spacingMm) return fallback;
+  return Math.max(Math.ceil(run / spacingMm), fallback);
+}
+
+function slabBbsDataItem({
+  description,
+  shape = "straight",
+  noOfItem = 1,
+  dia,
+  spacing = 1,
+  dimensions = [],
+  bends = 0,
+  lapNos = 0,
+  lap = 0,
+  noOfBar = 1,
+  cuttingLengthM,
+  remarks = "",
+}) {
+  const dims = [0, 0, 0, 0, 0].map((_, index) => Number(dimensions[index] || 0));
+  const cutting = Number.isFinite(Number(cuttingLengthM))
+    ? Number(cuttingLengthM)
+    : slabBbsCuttingLengthFromParts(dims, bends, dia);
+  return beamBbsDataItem({
+    description,
+    shape,
+    noOfItem,
+    dia,
+    spacing,
+    dimensions: dims,
+    bends,
+    lapNos,
+    lap,
+    noOfBar,
+    cuttingLengthM: cutting,
+    remarks,
+  });
+}
+
+function slabMarkFromRow(row = {}) {
+  const values = [
+    row.slabMark,
+    row.slabNo,
+    row.panelMark,
+    row.mark,
+    row.slabSchedule,
+    row.description,
+    row.remarks,
+  ];
+  for (const value of values) {
+    const match = String(value || "").match(/\bS\d+[A-Z]?\b/i);
+    if (match) return match[0].toUpperCase();
+  }
+  return "";
+}
+
+function slabBbsSpecFromRow(row = {}, keys = [], fallback = null) {
+  for (const key of keys) {
+    if (row[key] !== undefined && row[key] !== null && row[key] !== "") {
+      return parseBbsRebarSpec(row[key], fallback);
+    }
+  }
+  return cloneBbsSpec(fallback);
+}
+
+function slabBbsScheduleForRow(row = {}) {
+  const mark = slabMarkFromRow(row);
+  const base = SLAB_MARK_BBS_SCHEDULE[mark] || {};
+  const explicitThickness = row.slabThicknessMm || row.slabThickness || row.thickness || row.thicknessMm;
+  const rowHeight = Number(row.height);
+  const heightLooksLikeThickness = Number.isFinite(rowHeight) &&
+    rowHeight > 0 &&
+    Math.abs(rowHeight - 1) > 1e-6 &&
+    (rowHeight <= 0.5 || rowHeight > 10);
+  return {
+    mark,
+    way: String(row.slabWay || row.way || base.way || "two").toLowerCase(),
+    thicknessMm: drawingLengthToMm(
+      explicitThickness || base.thicknessMm || (heightLooksLikeThickness ? row.height : undefined),
+      base.thicknessMm || 150,
+    ),
+    shortFull: slabBbsSpecFromRow(row, [
+      "shortFullSpec",
+      "shortBottomFullSpec",
+      "shortBottomSpec",
+      "shortBottomFull",
+      "shortBottom",
+    ], base.shortFull || { dia: 8, spacing: 200 }),
+    shortCurtail: slabBbsSpecFromRow(row, [
+      "shortCurtailSpec",
+      "shortBottomCurtailSpec",
+      "shortBottomCurtail",
+      "shortCurtail",
+    ], base.shortCurtail),
+    longFull: slabBbsSpecFromRow(row, [
+      "longFullSpec",
+      "longBottomFullSpec",
+      "longBottomSpec",
+      "longBottomFull",
+      "longBottom",
+    ], base.longFull || { dia: 8, spacing: 250 }),
+    longCurtail: slabBbsSpecFromRow(row, [
+      "longCurtailSpec",
+      "longBottomCurtailSpec",
+      "longBottomCurtail",
+      "longCurtail",
+    ], base.longCurtail),
+  };
+}
+
+function slabTopMarkFromRow(row = {}, keys = [], fallback = "t1") {
+  for (const key of keys) {
+    const match = String(row[key] || "").match(/\bt\d+\b/i);
+    if (match) return match[0].toLowerCase();
+  }
+  return fallback;
+}
+
+function slabTopSpecForMark(mark, fallback = "t1") {
+  const key = String(mark || fallback || "t1").toLowerCase();
+  return cloneBbsSpec(SLAB_TOP_STEEL_MARK_SCHEDULE[key] || SLAB_TOP_STEEL_MARK_SCHEDULE[fallback] || SLAB_TOP_STEEL_MARK_SCHEDULE.t1);
+}
+
+function slabBoundaryLabel(row = {}, keys = [], fallback = "support") {
+  for (const key of keys) {
+    const value = String(row[key] || "").trim();
+    if (value) return value;
+  }
+  return fallback;
+}
+
+function slabBbsRowsForPanel(row, index) {
+  const rawLengthMm = drawingLengthToMm(row.length || row.panelLength || row.longSpan);
+  const rawBreadthMm = drawingLengthToMm(row.breadth || row.width || row.shortSpan);
+  const lengthMm = roundBbsDimensionMm(rawLengthMm, 5);
+  const breadthMm = roundBbsDimensionMm(rawBreadthMm, 5);
+  if (!lengthMm || !breadthMm) return [];
+
+  const panelNo = row.panelNo || row.name || `P${index + 1}`;
+  const schedule = slabBbsScheduleForRow(row);
+  const thicknessMm = roundBbsDimensionMm(schedule.thicknessMm || 150, 5);
+  const longMm = roundBbsDimensionMm(Math.max(lengthMm, breadthMm), 5);
+  const shortMm = roundBbsDimensionMm(Math.min(lengthMm, breadthMm), 5);
+  const shortFull = schedule.shortFull || { dia: 8, spacing: 200 };
+  const shortCurtailSpec = schedule.shortCurtail;
+  const longFull = schedule.longFull || { dia: 8, spacing: 250 };
+  const longCurtailSpec = schedule.longCurtail;
+  const topOuterLongMark = slabTopMarkFromRow(row, ["topOuterLongMark", "outerTopLongMark", "topMarkLongOuter", "topMark"], "t1");
+  const topSupportLongMark = slabTopMarkFromRow(row, ["topSupportLongMark", "beamTopLongMark", "topMarkAtBeam", "topSupportMark"], "t4");
+  const topOuterShortMark = slabTopMarkFromRow(row, ["topOuterShortMark", "outerTopShortMark", "topMarkShortOuter"], "t1");
+  const topSupportShortMark = slabTopMarkFromRow(row, ["topSupportShortMark", "wallTopShortMark", "topMarkAtWall"], "t1");
+  const topOuterLong = slabTopSpecForMark(topOuterLongMark, "t1");
+  const topSupportLong = slabTopSpecForMark(topSupportLongMark, "t4");
+  const topOuterShort = slabTopSpecForMark(topOuterShortMark, "t1");
+  const topSupportShort = slabTopSpecForMark(topSupportShortMark, "t1");
+  const distributionSpacing = normaliseBbsSpacing(row.distributionSpacing || 275, 275);
+  const endAnchorage = drawingLengthToMm(row.slabEndAnchorageMm || row.barEndAnchorageMm || 300, 300);
+  // distributionEndMm is always already in mm (a small ~100mm bar-end allowance) - routing it
+  // through drawingLengthToMm's mm-vs-metres size heuristic misreads values <= 100 as metres,
+  // inflating a 100mm allowance into 100000mm.
+  const distributionEnd = Math.max(1, Math.round(Number(row.distributionEndMm) || 100));
+  const shortCurtail = roundBbsDimensionMm(drawingLengthToMm(row.shortCurtailLengthMm || row.shortCurtailLength, Math.round(shortMm * 0.8)), 1);
+  const longCurtail = roundBbsDimensionMm(drawingLengthToMm(row.longCurtailLengthMm || row.longCurtailLength, Math.round(longMm * 0.8)), 1);
+  const topShortProjection = drawingLengthToMm(row.topShortProjectionMm || Math.round(shortMm * 0.334), Math.round(shortMm * 0.334));
+  const topLongProjection = drawingLengthToMm(row.topLongProjectionMm || Math.round(longMm * 0.334), Math.round(longMm * 0.334));
+  const topBeamBearing = drawingLengthToMm(row.topBeamBearingMm || row.beamWidthMm || row.supportWidthMm || 240, 240);
+  const topWallBearing = drawingLengthToMm(row.topWallBearingMm || row.wallWidthMm || row.outerWallWidthMm || 500, 500);
+  const topSupportProjection = drawingLengthToMm(row.topSupportProjectionMm || Math.round(shortMm * 0.683), Math.round(shortMm * 0.683));
+  const topShortSupportProjection = drawingLengthToMm(row.topShortSupportProjectionMm || Math.round(longMm * 0.532), Math.round(longMm * 0.532));
+  const topBeamLabel = slabBoundaryLabel(row, ["topBeam", "bottomBoundary", "topBoundary", "beamBoundary"], panelNo);
+  const topWallLabel = slabBoundaryLabel(row, ["leftBoundary", "outerBoundary", "wallBoundary"], "outer");
+  const topInnerLabel = slabBoundaryLabel(row, ["rightBoundary", "innerBoundary", "supportBoundary"], panelNo);
+  const lapFor = (dia) => drawingLengthToMm(row.lapMm || dia * 40, dia * 40);
+  const scheduleNeedsReview = !schedule.mark || !SLAB_MARK_BBS_SCHEDULE[schedule.mark];
+  const needsReview = row.needsReview || scheduleNeedsReview ? "need review" : "";
+  const rows = [
+    {
+      kind: "slab-member",
+      sr: `1.${index + 1}`,
+      description: panelNo,
+      thicknessMm,
+      lengthMm: longMm,
+      breadthMm: shortMm,
+      remarks: needsReview,
+    },
+    { kind: "heading", description: "Along Short span Slab Bottom" },
+    slabBbsDataItem({
+      description: `Full Length (A) (${bbsSpecText(shortFull)})`,
+      shape: "u",
+      dia: shortFull.dia,
+      spacing: shortFull.spacing,
+      dimensions: [shortMm, endAnchorage, endAnchorage],
+      bends: 2,
+      lapNos: 0,
+      lap: lapFor(shortFull.dia),
+      noOfBar: slabBbsBarCount(longMm, shortFull.spacing, 1),
+      remarks: needsReview,
+    }),
+  ];
+
+  if (shortCurtailSpec) {
+    rows.push(slabBbsDataItem({
+      description: `Curtailed bar (B) (${bbsSpecText(shortCurtailSpec)})`,
+      shape: "u",
+      dia: shortCurtailSpec.dia,
+      spacing: shortCurtailSpec.spacing,
+      dimensions: [shortCurtail],
+      bends: 0,
+      lapNos: 0,
+      lap: lapFor(shortCurtailSpec.dia),
+      noOfBar: slabBbsBarCount(longMm, shortCurtailSpec.spacing, 1),
+      cuttingLengthM: bbsMetresFromMm(shortCurtail),
+      remarks: needsReview,
+    }));
+  }
+
+  rows.push(
+    { kind: "heading", description: "Along Long span Slab Bottom" },
+    slabBbsDataItem({
+      description: `Full Length (A) (${bbsSpecText(longFull)})`,
+      shape: "u",
+      dia: longFull.dia,
+      spacing: longFull.spacing,
+      dimensions: [longMm, endAnchorage, endAnchorage],
+      bends: 2,
+      lapNos: 0,
+      lap: lapFor(longFull.dia),
+      noOfBar: slabBbsBarCount(shortMm, longFull.spacing, 1),
+      remarks: needsReview,
+    }),
+  );
+
+  if (longCurtailSpec) {
+    rows.push(slabBbsDataItem({
+      description: `Curtailed bar (B) (${bbsSpecText(longCurtailSpec)})`,
+      shape: "u",
+      dia: longCurtailSpec.dia,
+      spacing: longCurtailSpec.spacing,
+      dimensions: [longCurtail],
+      bends: 0,
+      lapNos: 0,
+      lap: lapFor(longCurtailSpec.dia),
+      noOfBar: slabBbsBarCount(shortMm, longCurtailSpec.spacing, 1),
+      cuttingLengthM: bbsMetresFromMm(longCurtail),
+      remarks: needsReview,
+    }));
+  }
+
+  rows.push(
+    { kind: "heading", description: "Along X & Y dirn in Slab Top" },
+    slabBbsDataItem({
+      description: `${topOuterLongMark} at ${longMm} (outer), (${bbsSpecText(topOuterLong)})`,
+      shape: "straight",
+      dia: topOuterLong.dia,
+      spacing: topOuterLong.spacing,
+      dimensions: [topShortProjection, endAnchorage],
+      bends: 1,
+      lapNos: 0,
+      lap: lapFor(topOuterLong.dia),
+      noOfBar: slabBbsBarCount(longMm, topOuterLong.spacing, 1),
+      remarks: needsReview,
+    }),
+    slabBbsDataItem({
+      description: `${topSupportLongMark} at ${longMm} (At ${topBeamLabel}), (${bbsSpecText(topSupportLong)})`,
+      shape: "u",
+      dia: topSupportLong.dia,
+      spacing: topSupportLong.spacing,
+      dimensions: [topSupportProjection, topBeamBearing, topSupportProjection],
+      bends: 0,
+      lapNos: 0,
+      lap: lapFor(topSupportLong.dia),
+      noOfBar: slabBbsBarCount(longMm, topSupportLong.spacing, 1),
+      remarks: needsReview,
+    }),
+    slabBbsDataItem({
+      description: `Distribution steel ${longMm} (${bbsSpecText(topOuterLong).replace(/ @ \d+$/, ` @ ${distributionSpacing}`)})`,
+      shape: "straight",
+      dia: topOuterLong.dia,
+      spacing: distributionSpacing,
+      dimensions: [longMm, distributionEnd, distributionEnd],
+      bends: 2,
+      lapNos: 0,
+      lap: lapFor(topOuterLong.dia),
+      noOfBar: slabBbsBarCount(shortMm, distributionSpacing, 1),
+      remarks: needsReview,
+    }),
+    slabBbsDataItem({
+      description: `${topOuterShortMark} at ${shortMm} (at ${topWallLabel}), (${bbsSpecText(topOuterShort)})`,
+      shape: "straight",
+      dia: topOuterShort.dia,
+      spacing: topOuterShort.spacing,
+      dimensions: [topLongProjection, endAnchorage],
+      bends: 1,
+      lapNos: 0,
+      lap: lapFor(topOuterShort.dia),
+      noOfBar: slabBbsBarCount(shortMm, topOuterShort.spacing, 1),
+      remarks: needsReview,
+    }),
+    slabBbsDataItem({
+      description: `${topSupportShortMark} at ${shortMm} (at ${topInnerLabel}), (${bbsSpecText(topSupportShort)})`,
+      shape: "u",
+      dia: topSupportShort.dia,
+      spacing: topSupportShort.spacing,
+      dimensions: [topShortSupportProjection, topWallBearing, topShortSupportProjection],
+      bends: 0,
+      lapNos: 0,
+      lap: lapFor(topSupportShort.dia),
+      noOfBar: slabBbsBarCount(shortMm, topSupportShort.spacing, 1),
+      remarks: needsReview,
+    }),
+    slabBbsDataItem({
+      description: `Distribution steel at ${shortMm} (${bbsSpecText(topOuterShort).replace(/ @ \d+$/, ` @ ${distributionSpacing}`)})`,
+      shape: "u",
+      dia: topOuterShort.dia,
+      spacing: distributionSpacing,
+      dimensions: [shortMm, distributionEnd, distributionEnd],
+      bends: 2,
+      lapNos: 0,
+      lap: lapFor(topOuterShort.dia),
+      noOfBar: slabBbsBarCount(longMm, distributionSpacing, 1),
+      remarks: needsReview,
+    }),
+  );
+
+  return rows;
+}
+
+function slabBbsRowHtml(entry, diaColumns = SLAB_BBS_DIA_COLUMNS) {
+  if (entry.kind !== "slab-member") return steelBbsRowHtml(entry, diaColumns);
+  return `
+    <tr class="member-row">
+      <td>${escapeHtml(entry.sr)}</td>
+      <td>${escapeHtml(entry.description)}</td>
+      <td>${formatNumber(entry.thicknessMm, 0)}</td>
+      <td>${formatNumber(entry.lengthMm, 0)}</td>
+      <td></td>
+      <td>${formatNumber(entry.breadthMm, 0)}</td>
+      <td colspan="5"></td>
+      <td></td>
+      <td colspan="2"></td>
+      <td></td>
+      <td></td>
+      ${diaColumns.map(() => "<td></td>").join("")}
+      <td>${escapeHtml(entry.remarks || "")}</td>
+    </tr>`;
+}
+
+function createSlabSteelBbsWorkbookHtml(packageInfo) {
+  const { rows = [], files = [], plans = [], summary = {} } = packageInfo;
+  const measuredFiles = (plans || [])
+    .filter((plan) => !plan.summary?.linkedDetailOnly)
+    .map((plan) => plan.fileName)
+    .filter(Boolean);
+  const sourceFiles = (measuredFiles.length ? measuredFiles : files.map((file) => file.name)).join(", ");
+  const floorName = rows.find((row) => row.floor)?.floor || packageInfo.floor || "Selected Floor";
+  const bbsRows = rows.flatMap((row, index) => slabBbsRowsForPanel(row, index));
+  const dataRows = [
+    `<tr class="group-row"><td>1.0</td><td colspan="${SLAB_BBS_DIA_COLUMNS.length + 16}">${escapeHtml(floorName)} Slab</td></tr>`,
+    ...bbsRows.map((entry) => slabBbsRowHtml(entry, SLAB_BBS_DIA_COLUMNS)),
+  ].join("");
+  const totalsByDia = Object.fromEntries(SLAB_BBS_DIA_COLUMNS.map((dia) => [dia, 0]));
+  bbsRows.forEach((entry) => {
+    if (entry.kind !== "bar") return;
+    if (Object.prototype.hasOwnProperty.call(totalsByDia, entry.dia)) {
+      totalsByDia[entry.dia] += Number(entry.totalLengthM || 0);
+    }
+  });
+  const weightsByDia = Object.fromEntries(SLAB_BBS_DIA_COLUMNS.map((dia) => [
+    dia,
+    totalsByDia[dia] * ((dia * dia) / 162),
+  ]));
+  const totalWeight = Object.values(weightsByDia).reduce((sum, value) => sum + Number(value || 0), 0);
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font-family: Arial, sans-serif; }
+      table { border-collapse: collapse; width: 100%; }
+      th, td { border: 1px solid #000; padding: 4px; font-size: 10pt; text-align: center; vertical-align: middle; }
+      th { font-weight: 700; }
+      .meta td { border: none; text-align: left; padding: 3px 6px; }
+      .group-row td { font-weight: 700; font-size: 12pt; text-align: left; }
+      .member-row td { font-weight: 700; }
+      .member-row td:nth-child(2), tbody td:nth-child(2) { text-align: left; }
+      .shape-line { display: inline-block; width: 84px; border-top: 1px solid #000; vertical-align: middle; }
+      .shape-u { display: inline-block; width: 84px; height: 14px; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle; }
+      .shape-stirrup { display: inline-block; width: 42px; height: 32px; border: 1px solid #000; vertical-align: middle; }
+    </style>
+  </head>
+  <body>
+    <table class="meta">
+      <tr><td><b>QSS Pro Slab BBS</b></td><td>${escapeHtml(sourceFiles)}</td></tr>
+      <tr><td><b>Generated</b></td><td>${escapeHtml(new Date().toLocaleString("en-IN"))}</td></tr>
+      <tr><td><b>Panels</b></td><td>${rows.length}</td></tr>
+      <tr><td><b>Review rows</b></td><td>${summary.reviewRows || 0}</td></tr>
+    </table>
+    <br />
+    <table>
+      <thead>
+        <tr>
+          <th rowspan="2">Sr. No</th>
+          <th rowspan="2">Description</th>
+          <th rowspan="2">Shape of bar</th>
+          <th rowspan="2">No. of item</th>
+          <th rowspan="2">Dia of bar<br />in mm</th>
+          <th rowspan="2">Spacing in<br />mm</th>
+          <th colspan="5">Dimensions in mm</th>
+          <th rowspan="2">No. of bend</th>
+          <th colspan="2">Lap</th>
+          <th rowspan="2">No. of bar</th>
+          <th rowspan="2">Cutting length (m)</th>
+          <th colspan="${SLAB_BBS_DIA_COLUMNS.length}">Total length in m</th>
+          <th rowspan="2">Remarks</th>
+        </tr>
+        <tr>
+          <th>A*</th>
+          <th>B*</th>
+          <th>C*</th>
+          <th>D*</th>
+          <th>E*</th>
+          <th>Nos</th>
+          <th>Lap</th>
+          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<th>#${dia}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+        ${dataRows}
+        <tr class="member-row">
+          <td></td>
+          <td>Total bar length by diameter</td>
+          <td colspan="14"></td>
+          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(totalsByDia[dia], 3)}</td>`).join("")}
+          <td></td>
+        </tr>
+        <tr class="member-row">
+          <td></td>
+          <td>Total steel weight kg</td>
+          <td colspan="14"></td>
+          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(weightsByDia[dia], 3)}</td>`).join("")}
+          <td>${formatNumber(totalWeight, 3)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </body>
+</html>`;
 }
 
 function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
@@ -3982,6 +5022,11 @@ function baseMbRemarks(row, itemType, quantityRule, beamCapMode = "included", ex
 
 function createExcelCompatibleMbSheet(packageInfo) {
   const { rows, itemType, quantityRule, files, plans, summary, beamCapMode = "included" } = packageInfo;
+  if (workbookTypeForPackage(packageInfo) === "BBS") {
+    return shouldUseBeamBbsWorkbook(packageInfo)
+      ? createBeamSteelBbsWorkbookHtml(packageInfo)
+      : createSlabSteelBbsWorkbookHtml(packageInfo);
+  }
   const unit = quantityUnit(quantityRule, itemType);
   const title = `QSS Pro MB Sheet - ${itemType.toUpperCase()} ${quantityRule}`;
   const measuredFiles = (plans || [])
@@ -4271,7 +5316,8 @@ function createFramingDownloadPackage({ files, rows, itemType, quantityRule, bea
   const base = safeName(path.basename(sourceFile.name, path.extname(sourceFile.name)) || "drawing").slice(0, 80);
   const ruleName = safeName(quantityRule || itemType || "quantity").slice(0, 40);
   const finalAllowed = Boolean(rows.length && summary.accuracyAudit?.finalAllowed && summary.ruleAudit?.finalAllowed && !summary.finalQuantityLocked);
-  const packageLabel = finalAllowed ? "MB" : "REVIEW-MB";
+  const workbookKind = workbookTypeForPackage({ rows, itemType, quantityRule });
+  const packageLabel = finalAllowed ? workbookKind : `REVIEW-${workbookKind}`;
   const excelName = rows.length ? `QSS-Pro-${base}-${ruleName}-${packageLabel}-${stamp}.xls` : "";
   if (rows.length) {
     const excelRows = finalAllowed
@@ -4311,6 +5357,9 @@ function createFramingDownloadPackage({ files, rows, itemType, quantityRule, bea
     panelMarks: markedReference?.panelMarks || 0,
     beamMarks: markedReference?.beamMarks || 0,
     reviewMarks: markedReference?.reviewMarks || 0,
+    workbookType: workbookKind,
+    itemType,
+    quantityRule,
     finalAllowed,
     reviewExcel: Boolean(rows.length && !finalAllowed),
     accuracyStatus: summary.accuracyAudit?.statusLabel || "",
@@ -5733,12 +6782,10 @@ async function handleExtractFramingQuantities(req, res) {
       }));
     }
     const extractedRows = plans.flatMap((plan) => plan.rows || []);
-    const rows = rowsWithMbQuantities(
-      finalQuantityRows(extractedRows, itemType),
-      itemType,
-      quantityRule,
-      beamCapMode,
-    );
+    const quantityRows = finalQuantityRows(extractedRows, itemType);
+    const rows = isSteelBbsTakeoff(itemType, quantityRule)
+      ? rowsWithBbsQuantities(quantityRows, itemType, quantityRule, beamCapMode)
+      : rowsWithMbQuantities(quantityRows, itemType, quantityRule, beamCapMode);
     const summary = {
       accuracyRuleVersion: ACCURACY_RULE_VERSION,
       rowCount: rows.length,
