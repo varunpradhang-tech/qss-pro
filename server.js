@@ -4108,17 +4108,225 @@ function bbsBarCount(runMm, spacing, fallback = 1) {
   return Math.max(Math.ceil(run / spacingMm) + 1, fallback);
 }
 
-function bbsShapeHtml(shape) {
-  if (shape === "stirrup") return '<span class="shape-stirrup"></span>';
-  if (shape === "u") return '<span class="shape-u"></span>';
-  return '<span class="shape-line"></span>';
+// 1-based column index -> spreadsheet letter (A, B, ..., Z, AA, ...).
+function columnLetter(n) {
+  let value = "";
+  let num = n;
+  while (num > 0) {
+    const rem = (num - 1) % 26;
+    value = String.fromCharCode(65 + rem) + value;
+    num = Math.floor((num - 1) / 26);
+  }
+  return value;
 }
 
-function bbsDiaTotalCellsHtml(dia, totalLengthM, diaColumns = BEAM_BBS_DIA_COLUMNS) {
-  const barDia = Math.round(Number(dia || 0));
-  return diaColumns
-    .map((columnDia) => `<td>${columnDia === barDia ? formatNumber(totalLengthM, 3) : ""}</td>`)
-    .join("");
+const BBS_XML_BORDERS = '<Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' +
+  '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' +
+  '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' +
+  '<Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders>';
+
+function bbsXmlStyles() {
+  return `<Styles>
+    <Style ss:ID="Default" ss:Name="Normal"><Alignment ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="10"/></Style>
+    <Style ss:ID="Meta"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>
+    <Style ss:ID="MetaBold"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>
+    <Style ss:ID="Group"><Font ss:FontName="Arial" ss:Size="12" ss:Bold="1"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>
+    <Style ss:ID="Header"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="Cell"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="CellLeft"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="Bold"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="BoldLeft"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+  </Styles>`;
+}
+
+function bbsXmlCell(value, { formula, type = "Number", styleId = "Cell", index } = {}) {
+  const indexAttr = index ? ` ss:Index="${index}"` : "";
+  const styleAttr = ` ss:StyleID="${styleId}"`;
+  const formulaAttr = formula ? ` ss:Formula="${escapeHtml(formula)}"` : "";
+  const hasValue = value !== undefined && value !== null && value !== "";
+  if (!hasValue && !formula) return `<Cell${indexAttr}${styleAttr}/>`;
+  const safeValue = type === "Number"
+    ? (Number.isFinite(Number(value)) ? Number(value) : 0)
+    : escapeHtml(value);
+  return `<Cell${indexAttr}${styleAttr}${formulaAttr}><Data ss:Type="${type}">${safeValue}</Data></Cell>`;
+}
+
+function bbsXmlMergedCell(value, { type = "String", styleId = "Header", mergeAcross = 0, mergeDown = 0, index } = {}) {
+  const attrs = [
+    index ? `ss:Index="${index}"` : "",
+    `ss:StyleID="${styleId}"`,
+    mergeAcross ? `ss:MergeAcross="${mergeAcross}"` : "",
+    mergeDown ? `ss:MergeDown="${mergeDown}"` : "",
+  ].filter(Boolean).join(" ");
+  const hasValue = value !== undefined && value !== null && value !== "";
+  const inner = hasValue ? `<Data ss:Type="${type}">${escapeHtml(value)}</Data>` : "";
+  return `<Cell ${attrs}>${inner}</Cell>`;
+}
+
+function bbsXmlRow(cellsXml) {
+  return `<Row>${cellsXml.join("")}</Row>`;
+}
+
+const BBS_XML_SHAPE_LABEL = { straight: "Straight", u: "U-bar", stirrup: "Stirrup" };
+
+// Renders a slab/beam Steel BBS workbook as a real SpreadsheetML (Excel-XML, .xls-compatible)
+// file with live formulas for Lap, Cutting length, and Total length by dia rather than baked-in
+// numbers - so opening any computed cell in Excel shows exactly which other cells it comes from
+// (standard BBS convention: dimensions/dia/spacing/bend count/bar count are the drafted inputs;
+// lap, cutting length, and total length are derived and should read as formulas).
+function renderSteelBbsSpreadsheet({
+  sheetName,
+  titleLabel,
+  sourceFiles,
+  rowsCount,
+  reviewRows,
+  groupLabel,
+  entries,
+  diaColumns,
+  bendMultiplier,
+}) {
+  const totalColumns = 16 + diaColumns.length + 1;
+  const remarksIndex = totalColumns;
+  const diaColLetters = diaColumns.map((_, index) => columnLetter(17 + index));
+  const rows = [];
+
+  rows.push(bbsXmlRow([bbsXmlCell(titleLabel, { type: "String", styleId: "MetaBold" }), bbsXmlCell(sourceFiles, { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Generated", { type: "String", styleId: "MetaBold" }), bbsXmlCell(new Date().toLocaleString("en-IN"), { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Rows", { type: "String", styleId: "MetaBold" }), bbsXmlCell(rowsCount, { styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Review rows", { type: "String", styleId: "MetaBold" }), bbsXmlCell(reviewRows || 0, { styleId: "Meta" })]));
+  rows.push(bbsXmlRow([]));
+
+  rows.push(bbsXmlRow([
+    bbsXmlMergedCell("Sr. No", { mergeDown: 1 }),
+    bbsXmlMergedCell("Description", { mergeDown: 1 }),
+    bbsXmlMergedCell("Shape of bar", { mergeDown: 1 }),
+    bbsXmlMergedCell("No. of item", { mergeDown: 1 }),
+    bbsXmlMergedCell("Dia of bar in mm", { mergeDown: 1 }),
+    bbsXmlMergedCell("Spacing in mm", { mergeDown: 1 }),
+    bbsXmlMergedCell("Dimensions in mm", { mergeAcross: 4 }),
+    bbsXmlMergedCell("No. of bend", { mergeDown: 1 }),
+    bbsXmlMergedCell("Lap", { mergeAcross: 1 }),
+    bbsXmlMergedCell("No. of bar", { mergeDown: 1 }),
+    bbsXmlMergedCell("Cutting length (m)", { mergeDown: 1 }),
+    bbsXmlMergedCell("Total length in m", { mergeAcross: Math.max(diaColumns.length - 1, 0) }),
+    bbsXmlMergedCell("Remarks", { mergeDown: 1 }),
+  ]));
+  rows.push(bbsXmlRow([
+    bbsXmlCell("A*", { type: "String", styleId: "Header", index: 7 }),
+    bbsXmlCell("B*", { type: "String", styleId: "Header" }),
+    bbsXmlCell("C*", { type: "String", styleId: "Header" }),
+    bbsXmlCell("D*", { type: "String", styleId: "Header" }),
+    bbsXmlCell("E*", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Nos", { type: "String", styleId: "Header", index: 13 }),
+    bbsXmlCell("Lap", { type: "String", styleId: "Header" }),
+    ...diaColumns.map((dia, i) => bbsXmlCell(`#${dia}`, { type: "String", styleId: "Header", index: i === 0 ? 17 : undefined })),
+  ]));
+
+  rows.push(bbsXmlRow([
+    bbsXmlCell("1.0", { type: "String", styleId: "Bold" }),
+    bbsXmlMergedCell(groupLabel, { styleId: "BoldLeft", mergeAcross: totalColumns - 2 }),
+  ]));
+
+  const totalsByDia = Object.fromEntries(diaColumns.map((dia) => [dia, 0]));
+  const firstDataRow = rows.length + 1;
+  entries.forEach((entry) => {
+    const rowNumber = rows.length + 1;
+    if (entry.kind === "member" || entry.kind === "slab-member") {
+      const cells = [
+        bbsXmlCell(entry.sr, { type: "String", styleId: "Bold" }),
+        bbsXmlCell(entry.description, { type: "String", styleId: "BoldLeft" }),
+      ];
+      if (entry.kind === "slab-member") {
+        cells.push(bbsXmlCell(entry.thicknessMm, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(entry.lengthMm, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(undefined, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(entry.breadthMm, { styleId: "Bold" }));
+      } else {
+        cells.push(bbsXmlCell(entry.lengthMm, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(entry.widthMm, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(undefined, { styleId: "Bold" }));
+        cells.push(bbsXmlCell(entry.depthMm, { styleId: "Bold" }));
+      }
+      for (let column = 7; column < remarksIndex; column += 1) cells.push(bbsXmlCell(undefined, { styleId: "Bold" }));
+      cells.push(bbsXmlCell(entry.remarks || "", { type: "String", styleId: "Bold" }));
+      rows.push(bbsXmlRow(cells));
+      return;
+    }
+    if (entry.kind === "heading") {
+      rows.push(bbsXmlRow([
+        bbsXmlCell(undefined, { styleId: "Bold" }),
+        bbsXmlMergedCell(entry.description, { styleId: "BoldLeft", mergeAcross: totalColumns - 2 }),
+      ]));
+      return;
+    }
+    const dims = [0, 1, 2, 3, 4].map((index) => Number(entry.dimensions[index] || 0));
+    const cells = [
+      bbsXmlCell(undefined, { styleId: "Cell" }),
+      bbsXmlCell(entry.description, { type: "String", styleId: "CellLeft" }),
+      bbsXmlCell(BBS_XML_SHAPE_LABEL[entry.shape] || "Straight", { type: "String", styleId: "Cell" }),
+      bbsXmlCell(entry.noOfItem, { styleId: "Cell" }),
+      bbsXmlCell(entry.dia, { styleId: "Cell" }),
+      bbsXmlCell(entry.spacing, { type: Number.isFinite(Number(entry.spacing)) ? "Number" : "String", styleId: "Cell" }),
+      ...dims.map((value) => bbsXmlCell(value || undefined, { styleId: "Cell" })),
+      bbsXmlCell(entry.bends, { styleId: "Cell" }),
+      bbsXmlCell(entry.lapNos, { styleId: "Cell" }),
+      bbsXmlCell(formatNumber(entry.lap, 0), { formula: `=40*E${rowNumber}`, styleId: "Cell" }),
+      bbsXmlCell(entry.noOfBar, { styleId: "Cell" }),
+      bbsXmlCell(formatNumber(entry.cuttingLengthM, 3), {
+        formula: `=(G${rowNumber}+H${rowNumber}+I${rowNumber}+J${rowNumber}+K${rowNumber})/1000-(L${rowNumber}*${bendMultiplier}*E${rowNumber}*0.001)+(N${rowNumber}*0.001*M${rowNumber})`,
+        styleId: "Cell",
+      }),
+    ];
+    const barDia = Math.round(Number(entry.dia || 0));
+    diaColumns.forEach((dia) => {
+      if (Number(dia) === barDia) {
+        totalsByDia[dia] += Number(entry.totalLengthM || 0);
+        cells.push(bbsXmlCell(formatNumber(entry.totalLengthM, 3), { formula: `=O${rowNumber}*P${rowNumber}`, styleId: "Cell" }));
+      } else {
+        cells.push(bbsXmlCell(undefined, { styleId: "Cell" }));
+      }
+    });
+    cells.push(bbsXmlCell(entry.remarks || "", { type: "String", styleId: "Cell" }));
+    rows.push(bbsXmlRow(cells));
+  });
+  const lastDataRow = rows.length;
+
+  const totalBarLengthRow = rows.length + 1;
+  rows.push(bbsXmlRow([
+    bbsXmlCell(undefined, { styleId: "Bold" }),
+    bbsXmlCell("Total bar length by diameter", { type: "String", styleId: "BoldLeft" }),
+    ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
+    ...diaColLetters.map((letter, i) => bbsXmlCell(formatNumber(totalsByDia[diaColumns[i]], 3), {
+      formula: `=SUM(${letter}${firstDataRow}:${letter}${lastDataRow})`,
+      styleId: "Bold",
+    })),
+    bbsXmlCell(undefined, { styleId: "Bold" }),
+  ]));
+  const weightsByDia = Object.fromEntries(diaColumns.map((dia) => [dia, totalsByDia[dia] * ((dia * dia) / 162)]));
+  rows.push(bbsXmlRow([
+    bbsXmlCell(undefined, { styleId: "Bold" }),
+    bbsXmlCell("Total steel weight kg", { type: "String", styleId: "BoldLeft" }),
+    ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
+    ...diaColLetters.map((letter, i) => bbsXmlCell(formatNumber(weightsByDia[diaColumns[i]], 3), {
+      formula: `=${letter}${totalBarLengthRow}*(${diaColumns[i]}*${diaColumns[i]}/162)`,
+      styleId: "Bold",
+    })),
+    bbsXmlCell(formatNumber(Object.values(weightsByDia).reduce((sum, value) => sum + value, 0), 3), {
+      formula: `=SUM(${diaColLetters[0]}${totalBarLengthRow + 1}:${diaColLetters[diaColLetters.length - 1]}${totalBarLengthRow + 1})`,
+      styleId: "Bold",
+    }),
+  ]));
+
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+${bbsXmlStyles()}
+<Worksheet ss:Name="${escapeHtml(sheetName)}">
+<Table>
+${rows.join("\n")}
+</Table>
+</Worksheet>
+</Workbook>`;
 }
 
 function bbsCuttingLengthFromParts(partsMm = [], bendCount = 0, dia = 0) {
@@ -4305,53 +4513,6 @@ function beamBbsRowsForMember(row, index) {
   return rows;
 }
 
-function steelBbsRowHtml(entry, diaColumns = BEAM_BBS_DIA_COLUMNS) {
-  if (entry.kind === "member") {
-    return `
-      <tr class="member-row">
-        <td>${escapeHtml(entry.sr)}</td>
-        <td>${escapeHtml(entry.description)}</td>
-        <td>${formatNumber(entry.lengthMm, 0)}</td>
-        <td>${formatNumber(entry.widthMm, 0)}</td>
-        <td></td>
-        <td>${formatNumber(entry.depthMm, 0)}</td>
-        <td colspan="5"></td>
-        <td></td>
-        <td colspan="2"></td>
-        <td></td>
-        <td></td>
-        ${diaColumns.map(() => "<td></td>").join("")}
-        <td>${escapeHtml(entry.remarks || "")}</td>
-      </tr>`;
-  }
-  if (entry.kind === "heading") {
-    return `
-      <tr>
-        <td></td>
-        <td>${escapeHtml(entry.description)}</td>
-        <td colspan="${diaColumns.length + 15}"></td>
-      </tr>`;
-  }
-  const dims = [0, 1, 2, 3, 4].map((index) => entry.dimensions[index] || "");
-  return `
-    <tr>
-      <td></td>
-      <td>${escapeHtml(entry.description)}</td>
-      <td>${bbsShapeHtml(entry.shape)}</td>
-      <td>${formatNumber(entry.noOfItem, 0)}</td>
-      <td>${formatNumber(entry.dia, 0)}</td>
-      <td>${escapeHtml(entry.spacing)}</td>
-      ${dims.map((value) => `<td>${value ? formatNumber(value, 0) : ""}</td>`).join("")}
-      <td>${formatNumber(entry.bends, 0)}</td>
-      <td>${formatNumber(entry.lapNos, 0)}</td>
-      <td>${formatNumber(entry.lap, 0)}</td>
-      <td>${formatNumber(entry.noOfBar, 0)}</td>
-      <td>${formatNumber(entry.cuttingLengthM, 3)}</td>
-      ${bbsDiaTotalCellsHtml(entry.dia, entry.totalLengthM, diaColumns)}
-      <td>${escapeHtml(entry.remarks || "")}</td>
-    </tr>`;
-}
-
 function createBeamSteelBbsWorkbookHtml(packageInfo) {
   const { rows = [], files = [], plans = [], summary = {} } = packageInfo;
   const measuredFiles = (plans || [])
@@ -4361,97 +4522,17 @@ function createBeamSteelBbsWorkbookHtml(packageInfo) {
   const sourceFiles = (measuredFiles.length ? measuredFiles : files.map((file) => file.name)).join(", ");
   const floorName = rows.find((row) => row.floor)?.floor || packageInfo.floor || "Selected Floor";
   const bbsRows = rows.flatMap((row, index) => beamBbsRowsForMember(row, index));
-  const dataRows = [
-    `<tr class="group-row"><td>1.0</td><td colspan="${BEAM_BBS_DIA_COLUMNS.length + 16}">Beams at ${escapeHtml(floorName)}</td></tr>`,
-    ...bbsRows.map((entry) => steelBbsRowHtml(entry, BEAM_BBS_DIA_COLUMNS)),
-  ].join("");
-  const totalsByDia = Object.fromEntries(BEAM_BBS_DIA_COLUMNS.map((dia) => [dia, 0]));
-  bbsRows.forEach((entry) => {
-    if (entry.kind !== "bar") return;
-    if (Object.prototype.hasOwnProperty.call(totalsByDia, entry.dia)) {
-      totalsByDia[entry.dia] += Number(entry.totalLengthM || 0);
-    }
+  return renderSteelBbsSpreadsheet({
+    sheetName: "Beam BBS",
+    titleLabel: "QSS Pro Beam BBS",
+    sourceFiles,
+    rowsCount: rows.length,
+    reviewRows: summary.reviewRows || 0,
+    groupLabel: `Beams at ${floorName}`,
+    entries: bbsRows,
+    diaColumns: BEAM_BBS_DIA_COLUMNS,
+    bendMultiplier: 1,
   });
-  const weightsByDia = Object.fromEntries(BEAM_BBS_DIA_COLUMNS.map((dia) => [
-    dia,
-    totalsByDia[dia] * ((dia * dia) / 162),
-  ]));
-  const totalWeight = Object.values(weightsByDia).reduce((sum, value) => sum + Number(value || 0), 0);
-
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body { font-family: Arial, sans-serif; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #000; padding: 4px; font-size: 10pt; text-align: center; vertical-align: middle; }
-      th { font-weight: 700; }
-      .meta td { border: none; text-align: left; padding: 3px 6px; }
-      .group-row td { font-weight: 700; font-size: 12pt; text-align: left; }
-      .member-row td { font-weight: 700; }
-      .member-row td:nth-child(2), tbody td:nth-child(2) { text-align: left; }
-      .shape-line { display: inline-block; width: 84px; border-top: 1px solid #000; vertical-align: middle; }
-      .shape-u { display: inline-block; width: 84px; height: 14px; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle; }
-      .shape-stirrup { display: inline-block; width: 42px; height: 32px; border: 1px solid #000; vertical-align: middle; }
-    </style>
-  </head>
-  <body>
-    <table class="meta">
-      <tr><td><b>QSS Pro Beam BBS</b></td><td>${escapeHtml(sourceFiles)}</td></tr>
-      <tr><td><b>Generated</b></td><td>${escapeHtml(new Date().toLocaleString("en-IN"))}</td></tr>
-      <tr><td><b>Rows</b></td><td>${rows.length}</td></tr>
-      <tr><td><b>Review rows</b></td><td>${summary.reviewRows || 0}</td></tr>
-    </table>
-    <br />
-    <table>
-      <thead>
-        <tr>
-          <th rowspan="2">Sr. No</th>
-          <th rowspan="2">Description</th>
-          <th rowspan="2">Shape of bar</th>
-          <th rowspan="2">No. of item</th>
-          <th rowspan="2">Dia of bar<br />in mm</th>
-          <th rowspan="2">Spacing in<br />mm</th>
-          <th colspan="5">Dimensions in mm</th>
-          <th rowspan="2">No. of bend</th>
-          <th colspan="2">Lap</th>
-          <th rowspan="2">No. of bar</th>
-          <th rowspan="2">Cutting length (m)</th>
-          <th colspan="${BEAM_BBS_DIA_COLUMNS.length}">Total length in m</th>
-          <th rowspan="2">Remarks</th>
-        </tr>
-        <tr>
-          <th>A*</th>
-          <th>B*</th>
-          <th>C*</th>
-          <th>D*</th>
-          <th>E*</th>
-          <th>Nos</th>
-          <th>Lap</th>
-          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<th>#${dia}</th>`).join("")}
-        </tr>
-      </thead>
-      <tbody>
-        ${dataRows}
-        <tr class="member-row">
-          <td></td>
-          <td>Total bar length by diameter</td>
-          <td colspan="14"></td>
-          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(totalsByDia[dia], 3)}</td>`).join("")}
-          <td></td>
-        </tr>
-        <tr class="member-row">
-          <td></td>
-          <td>Total steel weight kg</td>
-          <td colspan="14"></td>
-          ${BEAM_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(weightsByDia[dia], 3)}</td>`).join("")}
-          <td>${formatNumber(totalWeight, 3)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </body>
-</html>`;
 }
 
 function slabBbsCuttingLengthFromParts(partsMm = [], bendCount = 0, dia = 0) {
@@ -4794,26 +4875,6 @@ function slabBbsRowsForPanel(row, index, externalSchedule = {}) {
   return rows;
 }
 
-function slabBbsRowHtml(entry, diaColumns = SLAB_BBS_DIA_COLUMNS) {
-  if (entry.kind !== "slab-member") return steelBbsRowHtml(entry, diaColumns);
-  return `
-    <tr class="member-row">
-      <td>${escapeHtml(entry.sr)}</td>
-      <td>${escapeHtml(entry.description)}</td>
-      <td>${formatNumber(entry.thicknessMm, 0)}</td>
-      <td>${formatNumber(entry.lengthMm, 0)}</td>
-      <td></td>
-      <td>${formatNumber(entry.breadthMm, 0)}</td>
-      <td colspan="5"></td>
-      <td></td>
-      <td colspan="2"></td>
-      <td></td>
-      <td></td>
-      ${diaColumns.map(() => "<td></td>").join("")}
-      <td>${escapeHtml(entry.remarks || "")}</td>
-    </tr>`;
-}
-
 function createSlabSteelBbsWorkbookHtml(packageInfo) {
   const { rows = [], files = [], plans = [], summary = {} } = packageInfo;
   const measuredFiles = (plans || [])
@@ -4823,97 +4884,17 @@ function createSlabSteelBbsWorkbookHtml(packageInfo) {
   const sourceFiles = (measuredFiles.length ? measuredFiles : files.map((file) => file.name)).join(", ");
   const floorName = rows.find((row) => row.floor)?.floor || packageInfo.floor || "Selected Floor";
   const bbsRows = rows.flatMap((row, index) => slabBbsRowsForPanel(row, index, summary.slabReinforcementSchedule || {}));
-  const dataRows = [
-    `<tr class="group-row"><td>1.0</td><td colspan="${SLAB_BBS_DIA_COLUMNS.length + 16}">${escapeHtml(floorName)} Slab</td></tr>`,
-    ...bbsRows.map((entry) => slabBbsRowHtml(entry, SLAB_BBS_DIA_COLUMNS)),
-  ].join("");
-  const totalsByDia = Object.fromEntries(SLAB_BBS_DIA_COLUMNS.map((dia) => [dia, 0]));
-  bbsRows.forEach((entry) => {
-    if (entry.kind !== "bar") return;
-    if (Object.prototype.hasOwnProperty.call(totalsByDia, entry.dia)) {
-      totalsByDia[entry.dia] += Number(entry.totalLengthM || 0);
-    }
+  return renderSteelBbsSpreadsheet({
+    sheetName: "Slab BBS",
+    titleLabel: "QSS Pro Slab BBS",
+    sourceFiles,
+    rowsCount: rows.length,
+    reviewRows: summary.reviewRows || 0,
+    groupLabel: `${floorName} Slab`,
+    entries: bbsRows,
+    diaColumns: SLAB_BBS_DIA_COLUMNS,
+    bendMultiplier: 2,
   });
-  const weightsByDia = Object.fromEntries(SLAB_BBS_DIA_COLUMNS.map((dia) => [
-    dia,
-    totalsByDia[dia] * ((dia * dia) / 162),
-  ]));
-  const totalWeight = Object.values(weightsByDia).reduce((sum, value) => sum + Number(value || 0), 0);
-
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body { font-family: Arial, sans-serif; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #000; padding: 4px; font-size: 10pt; text-align: center; vertical-align: middle; }
-      th { font-weight: 700; }
-      .meta td { border: none; text-align: left; padding: 3px 6px; }
-      .group-row td { font-weight: 700; font-size: 12pt; text-align: left; }
-      .member-row td { font-weight: 700; }
-      .member-row td:nth-child(2), tbody td:nth-child(2) { text-align: left; }
-      .shape-line { display: inline-block; width: 84px; border-top: 1px solid #000; vertical-align: middle; }
-      .shape-u { display: inline-block; width: 84px; height: 14px; border-left: 1px solid #000; border-right: 1px solid #000; border-bottom: 1px solid #000; vertical-align: middle; }
-      .shape-stirrup { display: inline-block; width: 42px; height: 32px; border: 1px solid #000; vertical-align: middle; }
-    </style>
-  </head>
-  <body>
-    <table class="meta">
-      <tr><td><b>QSS Pro Slab BBS</b></td><td>${escapeHtml(sourceFiles)}</td></tr>
-      <tr><td><b>Generated</b></td><td>${escapeHtml(new Date().toLocaleString("en-IN"))}</td></tr>
-      <tr><td><b>Panels</b></td><td>${rows.length}</td></tr>
-      <tr><td><b>Review rows</b></td><td>${summary.reviewRows || 0}</td></tr>
-    </table>
-    <br />
-    <table>
-      <thead>
-        <tr>
-          <th rowspan="2">Sr. No</th>
-          <th rowspan="2">Description</th>
-          <th rowspan="2">Shape of bar</th>
-          <th rowspan="2">No. of item</th>
-          <th rowspan="2">Dia of bar<br />in mm</th>
-          <th rowspan="2">Spacing in<br />mm</th>
-          <th colspan="5">Dimensions in mm</th>
-          <th rowspan="2">No. of bend</th>
-          <th colspan="2">Lap</th>
-          <th rowspan="2">No. of bar</th>
-          <th rowspan="2">Cutting length (m)</th>
-          <th colspan="${SLAB_BBS_DIA_COLUMNS.length}">Total length in m</th>
-          <th rowspan="2">Remarks</th>
-        </tr>
-        <tr>
-          <th>A*</th>
-          <th>B*</th>
-          <th>C*</th>
-          <th>D*</th>
-          <th>E*</th>
-          <th>Nos</th>
-          <th>Lap</th>
-          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<th>#${dia}</th>`).join("")}
-        </tr>
-      </thead>
-      <tbody>
-        ${dataRows}
-        <tr class="member-row">
-          <td></td>
-          <td>Total bar length by diameter</td>
-          <td colspan="14"></td>
-          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(totalsByDia[dia], 3)}</td>`).join("")}
-          <td></td>
-        </tr>
-        <tr class="member-row">
-          <td></td>
-          <td>Total steel weight kg</td>
-          <td colspan="14"></td>
-          ${SLAB_BBS_DIA_COLUMNS.map((dia) => `<td>${formatNumber(weightsByDia[dia], 3)}</td>`).join("")}
-          <td>${formatNumber(totalWeight, 3)}</td>
-        </tr>
-      </tbody>
-    </table>
-  </body>
-</html>`;
 }
 
 function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
