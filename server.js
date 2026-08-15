@@ -4120,6 +4120,20 @@ function columnLetter(n) {
   return value;
 }
 
+// SpreadsheetML's ss:Formula attribute needs R1C1-relative notation, not plain A1 references -
+// real Excel-generated XML Spreadsheet files always write formulas this way, and at least one
+// real-world importer (confirmed against an actual opened file) silently misparses bare A1 cell
+// refs there, quoting each one as a text literal and producing #NAME? instead of a value.
+function r1c1Ref(fromRow, fromCol, toRow, toCol) {
+  const rowPart = toRow === fromRow ? "R" : `R[${toRow - fromRow}]`;
+  const colPart = toCol === fromCol ? "C" : `C[${toCol - fromCol}]`;
+  return rowPart + colPart;
+}
+
+function r1c1Range(fromRow, fromCol, toRowStart, toRowEnd, toCol) {
+  return `${r1c1Ref(fromRow, fromCol, toRowStart, toCol)}:${r1c1Ref(fromRow, fromCol, toRowEnd, toCol)}`;
+}
+
 const BBS_XML_BORDERS = '<Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>' +
   '<Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>' +
   '<Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>' +
@@ -4270,18 +4284,22 @@ function renderSteelBbsSpreadsheet({
       ...dims.map((value) => bbsXmlCell(value || undefined, { styleId: "Cell" })),
       bbsXmlCell(entry.bends, { styleId: "Cell" }),
       bbsXmlCell(entry.lapNos, { styleId: "Cell" }),
-      bbsXmlCell(formatNumber(entry.lap, 0), { formula: `=40*E${rowNumber}`, styleId: "Cell" }),
+      bbsXmlCell(formatNumber(entry.lap, 0), { formula: `=40*${r1c1Ref(rowNumber, 14, rowNumber, 5)}`, styleId: "Cell" }),
       bbsXmlCell(entry.noOfBar, { styleId: "Cell" }),
       bbsXmlCell(formatNumber(entry.cuttingLengthM, 3), {
-        formula: `=(G${rowNumber}+H${rowNumber}+I${rowNumber}+J${rowNumber}+K${rowNumber})/1000-(L${rowNumber}*${bendMultiplier}*E${rowNumber}*0.001)+(N${rowNumber}*0.001*M${rowNumber})`,
+        formula: `=(${r1c1Ref(rowNumber, 16, rowNumber, 7)}+${r1c1Ref(rowNumber, 16, rowNumber, 8)}+${r1c1Ref(rowNumber, 16, rowNumber, 9)}+${r1c1Ref(rowNumber, 16, rowNumber, 10)}+${r1c1Ref(rowNumber, 16, rowNumber, 11)})/1000-(${r1c1Ref(rowNumber, 16, rowNumber, 12)}*${bendMultiplier}*${r1c1Ref(rowNumber, 16, rowNumber, 5)}*0.001)+(${r1c1Ref(rowNumber, 16, rowNumber, 14)}*0.001*${r1c1Ref(rowNumber, 16, rowNumber, 13)})`,
         styleId: "Cell",
       }),
     ];
     const barDia = Math.round(Number(entry.dia || 0));
-    diaColumns.forEach((dia) => {
+    diaColumns.forEach((dia, diaIndex) => {
+      const diaCol = 17 + diaIndex;
       if (Number(dia) === barDia) {
         totalsByDia[dia] += Number(entry.totalLengthM || 0);
-        cells.push(bbsXmlCell(formatNumber(entry.totalLengthM, 3), { formula: `=O${rowNumber}*P${rowNumber}`, styleId: "Cell" }));
+        cells.push(bbsXmlCell(formatNumber(entry.totalLengthM, 3), {
+          formula: `=${r1c1Ref(rowNumber, diaCol, rowNumber, 15)}*${r1c1Ref(rowNumber, diaCol, rowNumber, 16)}`,
+          styleId: "Cell",
+        }));
       } else {
         cells.push(bbsXmlCell(undefined, { styleId: "Cell" }));
       }
@@ -4296,23 +4314,30 @@ function renderSteelBbsSpreadsheet({
     bbsXmlCell(undefined, { styleId: "Bold" }),
     bbsXmlCell("Total bar length by diameter", { type: "String", styleId: "BoldLeft" }),
     ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
-    ...diaColLetters.map((letter, i) => bbsXmlCell(formatNumber(totalsByDia[diaColumns[i]], 3), {
-      formula: `=SUM(${letter}${firstDataRow}:${letter}${lastDataRow})`,
-      styleId: "Bold",
-    })),
+    ...diaColumns.map((dia, i) => {
+      const diaCol = 17 + i;
+      return bbsXmlCell(formatNumber(totalsByDia[dia], 3), {
+        formula: `=SUM(${r1c1Ref(totalBarLengthRow, diaCol, firstDataRow, diaCol)}:${r1c1Ref(totalBarLengthRow, diaCol, lastDataRow, diaCol)})`,
+        styleId: "Bold",
+      });
+    }),
     bbsXmlCell(undefined, { styleId: "Bold" }),
   ]));
+  const weightRow = totalBarLengthRow + 1;
   const weightsByDia = Object.fromEntries(diaColumns.map((dia) => [dia, totalsByDia[dia] * ((dia * dia) / 162)]));
   rows.push(bbsXmlRow([
     bbsXmlCell(undefined, { styleId: "Bold" }),
     bbsXmlCell("Total steel weight kg", { type: "String", styleId: "BoldLeft" }),
     ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
-    ...diaColLetters.map((letter, i) => bbsXmlCell(formatNumber(weightsByDia[diaColumns[i]], 3), {
-      formula: `=${letter}${totalBarLengthRow}*(${diaColumns[i]}*${diaColumns[i]}/162)`,
-      styleId: "Bold",
-    })),
+    ...diaColumns.map((dia, i) => {
+      const diaCol = 17 + i;
+      return bbsXmlCell(formatNumber(weightsByDia[dia], 3), {
+        formula: `=${r1c1Ref(weightRow, diaCol, totalBarLengthRow, diaCol)}*(${dia}*${dia}/162)`,
+        styleId: "Bold",
+      });
+    }),
     bbsXmlCell(formatNumber(Object.values(weightsByDia).reduce((sum, value) => sum + value, 0), 3), {
-      formula: `=SUM(${diaColLetters[0]}${totalBarLengthRow + 1}:${diaColLetters[diaColLetters.length - 1]}${totalBarLengthRow + 1})`,
+      formula: `=SUM(${r1c1Ref(weightRow, remarksIndex, weightRow, 17)}:${r1c1Ref(weightRow, remarksIndex, weightRow, 16 + diaColumns.length)})`,
       styleId: "Bold",
     }),
   ]));
@@ -5092,12 +5117,12 @@ function renderMbSpreadsheet({
     ];
     if (entry.formulaKind === "beam-concrete") {
       cells.push(bbsXmlCell(formatNumber(entry.total), {
-        formula: `=MAX(E${rowNumber}*F${rowNumber}*G${rowNumber}-H${rowNumber},0)*D${rowNumber}`,
+        formula: `=MAX(${r1c1Ref(rowNumber, 9, rowNumber, 5)}*${r1c1Ref(rowNumber, 9, rowNumber, 6)}*${r1c1Ref(rowNumber, 9, rowNumber, 7)}-${r1c1Ref(rowNumber, 9, rowNumber, 8)},0)*${r1c1Ref(rowNumber, 9, rowNumber, 4)}`,
         styleId: "Cell",
       }));
     } else if (entry.formulaKind === "area") {
       cells.push(bbsXmlCell(formatNumber(entry.total), {
-        formula: `=MAX(E${rowNumber}*F${rowNumber}-H${rowNumber},0)*G${rowNumber}*D${rowNumber}`,
+        formula: `=MAX(${r1c1Ref(rowNumber, 9, rowNumber, 5)}*${r1c1Ref(rowNumber, 9, rowNumber, 6)}-${r1c1Ref(rowNumber, 9, rowNumber, 8)},0)*${r1c1Ref(rowNumber, 9, rowNumber, 7)}*${r1c1Ref(rowNumber, 9, rowNumber, 4)}`,
         styleId: "Cell",
       }));
     } else {
