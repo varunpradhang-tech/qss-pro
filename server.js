@@ -4925,6 +4925,7 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
     unit: "sqm",
     sourceRow: row,
   };
+  const bottomOverrideApplied = Number(row.bottomAreaOverride || 0) > 0;
   const rows = [
     {
       ...common,
@@ -4933,8 +4934,11 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
       length,
       breadth: width,
       height: 1,
+      deduction: bottomJointDeduction,
+      formulaKind: bottomOverrideApplied ? "static" : "area",
       total: bottomArea * nos,
       extraRemarks: [
+        bottomOverrideApplied ? "override value used" : "",
         "beam bottom/soffit",
         bottomJointDeduction > 0 ? `bottom joint deduction ${formatNumber(bottomJointDeduction)} sqm` : "",
       ],
@@ -4950,6 +4954,8 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
         length,
         breadth: Number(segment.sideHeightM || 0),
         height: 1,
+        deduction: 0,
+        formulaKind: "area",
         total: Number(segment.areaM2 || 0) * nos,
         extraRemarks: [
           `side face ${index + 1}`,
@@ -4971,6 +4977,8 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
         length: faceLength,
         breadth: effectiveSideHeight || sideHeight,
         height: 1,
+        deduction: 0,
+        formulaKind: "area",
         total: faceLength * (effectiveSideHeight || sideHeight) * nos,
         extraRemarks: [
           `side face ${index + 1}`,
@@ -4980,6 +4988,9 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
       });
     });
   } else {
+    // effectiveSideHeight is derived as sideArea/(2*sideLength), so length*breadth*nos
+    // reproduces sideArea*nos exactly even when sideArea came from an override or had a
+    // joint deduction folded in - the area formula stays valid without a separate deduction.
     rows.push({
       ...common,
       description: `${description} - side shuttering`,
@@ -4987,6 +4998,8 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
       length: sideLength,
       breadth: effectiveSideHeight,
       height: 1,
+      deduction: 0,
+      formulaKind: "area",
       total: sideArea * nos,
       extraRemarks: [
         "two side faces",
@@ -5003,6 +5016,8 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
       length: 1,
       breadth: capAddition,
       height: 1,
+      deduction: 0,
+      formulaKind: "area",
       total: capAddition * nos,
       extraRemarks: ["column cap shuttering included with beam shuttering"],
     });
@@ -5012,6 +5027,96 @@ function beamShutteringMbBreakupRows(row, beamCapMode = "included") {
 
 function baseMbRemarks(row, itemType, quantityRule, beamCapMode = "included", extraRemarks = []) {
   return row.needsReview ? "need review" : "";
+}
+
+// Renders the plain (non-BBS) MB sheet - concrete, shuttering, tiles, plaster, brickwork, etc.
+// - as a real Excel workbook with a live formula in Total Qty rather than a baked-in number:
+//   area-shape items (everything except beam concrete): (Length*Breadth - Deduction) * Height * Nos
+//   beam concrete: (Length*Breadth*Height - Deduction) * Nos
+// Deduction covers openings (area items) or a column-cap volume deduction (beam concrete); it's
+// its own visible column so the formula is fully self-contained. A handful of rows carry a
+// hand-entered override value that bypasses the geometric formula entirely (e.g. a manually
+// corrected bottom shuttering area) - those show as a plain number with a "override value used"
+// remark instead of a formula, since a formula can't represent "ignore geometry, use this number".
+function renderMbSpreadsheet({
+  title,
+  sourceFiles,
+  linkedReferenceFiles,
+  rowsCount,
+  reviewRows,
+  accuracyStatusLabel,
+  calculationRoutes,
+  panelMarksLabel,
+  planWarnings,
+  accuracyWarnings,
+  entries,
+}) {
+  const rows = [];
+  rows.push(bbsXmlRow([bbsXmlCell(title, { type: "String", styleId: "MetaBold" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Measured framing drawing(s)", { type: "String", styleId: "MetaBold" }), bbsXmlCell(sourceFiles, { type: "String", styleId: "Meta" })]));
+  if (linkedReferenceFiles) rows.push(bbsXmlRow([bbsXmlCell("Linked reference drawing(s)", { type: "String", styleId: "MetaBold" }), bbsXmlCell(linkedReferenceFiles, { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Rows", { type: "String", styleId: "MetaBold" }), bbsXmlCell(rowsCount, { styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Review rows", { type: "String", styleId: "MetaBold" }), bbsXmlCell(reviewRows || 0, { styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Accuracy status", { type: "String", styleId: "MetaBold" }), bbsXmlCell(accuracyStatusLabel || "Not audited", { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Calculation route", { type: "String", styleId: "MetaBold" }), bbsXmlCell(calculationRoutes || "", { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Panel / beam marks", { type: "String", styleId: "MetaBold" }), bbsXmlCell(panelMarksLabel || "", { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([bbsXmlCell("Generated", { type: "String", styleId: "MetaBold" }), bbsXmlCell(new Date().toLocaleString("en-IN"), { type: "String", styleId: "Meta" })]));
+  if (planWarnings) rows.push(bbsXmlRow([bbsXmlCell("Warnings", { type: "String", styleId: "MetaBold" }), bbsXmlCell(planWarnings, { type: "String", styleId: "Meta" })]));
+  if (accuracyWarnings) rows.push(bbsXmlRow([bbsXmlCell("Accuracy warnings", { type: "String", styleId: "MetaBold" }), bbsXmlCell(accuracyWarnings, { type: "String", styleId: "Meta" })]));
+  rows.push(bbsXmlRow([]));
+
+  rows.push(bbsXmlRow([
+    bbsXmlCell("S.No.", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Item Description", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Unit", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Number of Member", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Length", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Width / Breadth", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Height / Thickness", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Deduction", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Total Qty", { type: "String", styleId: "Header" }),
+    bbsXmlCell("Remarks", { type: "String", styleId: "Header" }),
+  ]));
+
+  entries.forEach((entry, index) => {
+    const rowNumber = rows.length + 1;
+    const cells = [
+      bbsXmlCell(index + 1, { styleId: "Cell" }),
+      bbsXmlCell(entry.description, { type: "String", styleId: "CellLeft" }),
+      bbsXmlCell(entry.unit, { type: "String", styleId: "Cell" }),
+      bbsXmlCell(entry.nos, { styleId: "Cell" }),
+      bbsXmlCell(entry.length, { styleId: "Cell" }),
+      bbsXmlCell(entry.breadth, { styleId: "Cell" }),
+      bbsXmlCell(entry.height, { styleId: "Cell" }),
+      bbsXmlCell(entry.deduction || 0, { styleId: "Cell" }),
+    ];
+    if (entry.formulaKind === "beam-concrete") {
+      cells.push(bbsXmlCell(formatNumber(entry.total), {
+        formula: `=MAX(E${rowNumber}*F${rowNumber}*G${rowNumber}-H${rowNumber},0)*D${rowNumber}`,
+        styleId: "Cell",
+      }));
+    } else if (entry.formulaKind === "area") {
+      cells.push(bbsXmlCell(formatNumber(entry.total), {
+        formula: `=MAX(E${rowNumber}*F${rowNumber}-H${rowNumber},0)*G${rowNumber}*D${rowNumber}`,
+        styleId: "Cell",
+      }));
+    } else {
+      cells.push(bbsXmlCell(formatNumber(entry.total), { styleId: "Cell" }));
+    }
+    cells.push(bbsXmlCell(entry.remarks || "", { type: "String", styleId: "Cell" }));
+    rows.push(bbsXmlRow(cells));
+  });
+
+  return `<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+${bbsXmlStyles()}
+<Worksheet ss:Name="MB Sheet">
+<Table>
+${rows.join("\n")}
+</Table>
+</Worksheet>
+</Workbook>`;
 }
 
 function createExcelCompatibleMbSheet(packageInfo) {
@@ -5037,81 +5142,47 @@ function createExcelCompatibleMbSheet(packageInfo) {
     .map((plan) => plan.warning)
     .filter(Boolean)
     .join(" | ");
+  const isBeamConcrete = itemType === "beam" && /concrete/i.test(quantityRule);
   const mbRows = itemType === "beam" && /shuttering/i.test(quantityRule)
     ? rows.flatMap((row) => beamShutteringMbBreakupRows(row, beamCapMode))
-    : rows.map((row) => ({
-        sourceRow: row,
-        description: mbDescription(row, itemType),
-        unit,
-        nos: row.nos || 1,
-        length: row.length,
-        breadth: row.breadth,
-        height: mbHeight(row, itemType, quantityRule),
-        total: mbQuantity(row, itemType, quantityRule, beamCapMode),
-        extraRemarks: [],
-      }));
-  const dataRows = mbRows.map((entry, index) => {
+    : rows.map((row) => {
+        const override = isBeamConcrete && Number(row.grossConcreteOverride || 0) > 0;
+        const deduction = isBeamConcrete
+          ? (beamCapMode === "excluded" ? Math.max(Number(row.columnCapDeduction || 0), 0) : 0)
+          : Number(row.openings || 0);
+        return {
+          sourceRow: row,
+          description: mbDescription(row, itemType),
+          unit,
+          nos: row.nos || 1,
+          length: row.length,
+          breadth: row.breadth,
+          height: mbHeight(row, itemType, quantityRule),
+          deduction,
+          formulaKind: override ? "static" : (isBeamConcrete ? "beam-concrete" : "area"),
+          total: mbQuantity(row, itemType, quantityRule, beamCapMode),
+          extraRemarks: override ? ["override value used"] : [],
+        };
+      });
+  const entries = mbRows.map((entry) => {
     const row = entry.sourceRow;
     const remarks = baseMbRemarks(row, itemType, quantityRule, beamCapMode, entry.extraRemarks || []);
-    return `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${escapeHtml(entry.description)}</td>
-        <td>${escapeHtml(entry.unit || unit)}</td>
-        <td>${formatNumber(entry.nos || 1, 0)}</td>
-        <td>${formatNumber(entry.length)}</td>
-        <td>${formatNumber(entry.breadth)}</td>
-        <td>${formatNumber(entry.height)}</td>
-        <td>${formatNumber(entry.total)}</td>
-        <td>${escapeHtml(remarks)}</td>
-      </tr>`;
-  }).join("");
+    return { ...entry, unit: entry.unit || unit, nos: entry.nos || 1, remarks };
+  });
 
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      body { font-family: Arial, sans-serif; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #777; padding: 6px; font-size: 11pt; }
-      th { background: #dfeaf0; font-weight: 700; }
-      .meta td { border: none; padding: 3px 6px; }
-    </style>
-  </head>
-  <body>
-    <h2>${escapeHtml(title)}</h2>
-    <table class="meta">
-      <tr><td><b>Measured framing drawing(s)</b></td><td>${escapeHtml(sourceFiles)}</td></tr>
-      ${linkedReferenceFiles ? `<tr><td><b>Linked reference drawing(s)</b></td><td>${escapeHtml(linkedReferenceFiles)}</td></tr>` : ""}
-      <tr><td><b>Rows</b></td><td>${rows.length}</td></tr>
-      <tr><td><b>Review rows</b></td><td>${summary.reviewRows || 0}</td></tr>
-      <tr><td><b>Accuracy status</b></td><td>${escapeHtml(summary.accuracyAudit?.statusLabel || "Not audited")}</td></tr>
-      <tr><td><b>Calculation route</b></td><td>${escapeHtml(summary.accuracyAudit?.routes?.join(", ") || "")}</td></tr>
-      <tr><td><b>Panel / beam marks</b></td><td>${escapeHtml(`${summary.accuracyAudit?.panelMarks || 0} panel mark(s), ${summary.accuracyAudit?.beamMarks || 0} QB mark(s)`)}</td></tr>
-      <tr><td><b>Generated</b></td><td>${escapeHtml(new Date().toLocaleString("en-IN"))}</td></tr>
-      ${planWarnings ? `<tr><td><b>Warnings</b></td><td>${escapeHtml(planWarnings)}</td></tr>` : ""}
-      ${summary.accuracyAudit?.warnings?.length ? `<tr><td><b>Accuracy warnings</b></td><td>${escapeHtml(summary.accuracyAudit.warnings.join(" | "))}</td></tr>` : ""}
-    </table>
-    <br />
-    <table>
-      <thead>
-        <tr>
-          <th>S.No.</th>
-          <th>Item Description</th>
-          <th>Unit</th>
-          <th>Number of Member</th>
-          <th>Length</th>
-          <th>Width / Breadth</th>
-          <th>Height / Thickness</th>
-          <th>Total Qty</th>
-          <th>Remarks</th>
-        </tr>
-      </thead>
-      <tbody>${dataRows}</tbody>
-    </table>
-  </body>
-</html>`;
+  return renderMbSpreadsheet({
+    title,
+    sourceFiles,
+    linkedReferenceFiles,
+    rowsCount: rows.length,
+    reviewRows: summary.reviewRows || 0,
+    accuracyStatusLabel: summary.accuracyAudit?.statusLabel,
+    calculationRoutes: summary.accuracyAudit?.routes?.join(", ") || "",
+    panelMarksLabel: `${summary.accuracyAudit?.panelMarks || 0} panel mark(s), ${summary.accuracyAudit?.beamMarks || 0} QB mark(s)`,
+    planWarnings,
+    accuracyWarnings: summary.accuracyAudit?.warnings?.length ? summary.accuracyAudit.warnings.join(" | ") : "",
+    entries,
+  });
 }
 
 function percent(value) {
