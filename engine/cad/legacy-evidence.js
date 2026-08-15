@@ -466,6 +466,96 @@ function extractSlabThicknessInfo(textEntities) {
   return { slabMarks, thicknessTexts, byMark, slabSpecs, defaultThicknessMm, defaultNote };
 }
 
+function parseSlabScheduleBarSpec(text) {
+  const match = String(text || "").match(/T\s*(\d+)\s*@\s*(\d+)/i);
+  if (!match) return null;
+  const dia = Number(match[1]);
+  const spacing = Number(match[2]);
+  if (!dia || !spacing) return null;
+  return { dia, spacing };
+}
+
+// Reads the drawing's own per-mark slab reinforcement schedule table (title matching
+// "SLAB(S) SCHEDULE...", columns: SLAB NO. | THICKNESS | ALONG SHORT SPAN BOTTOM REINF.
+// (FULL LENGTH, CURTAILED) | ALONG LONG SPAN BOTTOM REINF. (FULL LENGTH, CURTAILED) | REMARK
+// (ONE WAY/TWO WAY)) by locating column headers and matching each mark row by Y-proximity.
+// This is the drawing's actual per-mark specification - the only reliable source once a
+// project has more marks than any small hand-transcribed table could cover.
+function extractSlabReinforcementSchedule(textEntities) {
+  const nonXrefTextEntities = textEntities.filter((item) => !isXrefSourcedEntity(item));
+  const title = nonXrefTextEntities.find((item) => /SLABS?\s*SCHEDULE/i.test(String(item.text || "")));
+  if (!title) return {};
+
+  const headerCandidates = nonXrefTextEntities.filter((item) =>
+    Math.abs((item.y || 0) - title.y) <= 6000 && (item.y || 0) <= title.y);
+  const findHeader = (pattern) => headerCandidates.find((item) => pattern.test(String(item.text || "").trim()));
+  const markHeader = findHeader(/^SLAB\s*NO\.?$/i);
+  const thicknessHeader = findHeader(/^THICKNESS$/i);
+  const shortHeader = findHeader(/SHORT\s*SPAN.*BOTTOM/i);
+  const longHeader = findHeader(/LONG\s*SPAN.*BOTTOM/i);
+  const remarkHeader = findHeader(/^REMARK$/i);
+  if (!markHeader || !thicknessHeader || !shortHeader || !longHeader) return {};
+
+  const subHeaders = headerCandidates.filter((item) => /^(FULL\s*LENGTH|CURTAILED)$/i.test(String(item.text || "").trim()));
+  const nearestSubHeader = (parentX, labelPattern) => subHeaders
+    .filter((item) => labelPattern.test(String(item.text || "").trim()))
+    .sort((a, b) => Math.abs((a.x || 0) - parentX) - Math.abs((b.x || 0) - parentX))[0];
+  const shortFullHeader = nearestSubHeader(shortHeader.x, /^FULL\s*LENGTH$/i);
+  const shortCurtailHeader = nearestSubHeader(shortHeader.x, /^CURTAILED$/i);
+  const longFullHeader = nearestSubHeader(longHeader.x, /^FULL\s*LENGTH$/i);
+  const longCurtailHeader = nearestSubHeader(longHeader.x, /^CURTAILED$/i);
+  if (!shortFullHeader || !longFullHeader) return {};
+
+  const columns = {
+    thickness: thicknessHeader.x,
+    shortFull: shortFullHeader.x,
+    shortCurtail: shortCurtailHeader?.x,
+    longFull: longFullHeader.x,
+    longCurtail: longCurtailHeader?.x,
+    remark: remarkHeader?.x,
+  };
+
+  const headerCells = [markHeader, thicknessHeader, shortHeader, longHeader, remarkHeader,
+    shortFullHeader, shortCurtailHeader, longFullHeader, longCurtailHeader].filter(Boolean);
+  const headerRowBottomY = Math.min(...headerCells.map((item) => item.y || 0));
+
+  const markRows = nonXrefTextEntities.filter((item) =>
+    /^S\d+[A-Z]?$/i.test(String(item.text || "").trim()) &&
+    Math.abs((item.x || 0) - markHeader.x) <= 1200 &&
+    (item.y || 0) < headerRowBottomY - 100);
+
+  const rowToleranceMm = 250;
+  const schedule = {};
+  for (const markCell of markRows) {
+    const mark = String(markCell.text).trim().toUpperCase();
+    const rowCandidates = nonXrefTextEntities.filter((item) => Math.abs((item.y || 0) - markCell.y) <= rowToleranceMm);
+    const cellAt = (targetX) => {
+      if (targetX == null) return null;
+      return rowCandidates.slice().sort((a, b) => Math.abs((a.x || 0) - targetX) - Math.abs((b.x || 0) - targetX))[0];
+    };
+    const thicknessCell = cellAt(columns.thickness);
+    const thicknessMm = Number(String(thicknessCell?.text || "").match(/^(\d{2,3})$/)?.[1] || 0);
+    if (!thicknessMm) continue;
+    const remarkCell = cellAt(columns.remark);
+    const way = /ONE\s*WAY/i.test(String(remarkCell?.text || "")) ? "one" : "two";
+    const specAt = (targetX) => {
+      const cell = cellAt(targetX);
+      if (!cell || /^-$/.test(String(cell.text || "").trim())) return null;
+      return parseSlabScheduleBarSpec(cell.text);
+    };
+    schedule[mark] = {
+      thicknessMm,
+      way,
+      shortFull: specAt(columns.shortFull),
+      shortCurtail: specAt(columns.shortCurtail),
+      longFull: specAt(columns.longFull),
+      longCurtail: specAt(columns.longCurtail),
+      sourceBasis: "slab-reinforcement-schedule-table",
+    };
+  }
+  return schedule;
+}
+
 function extractDetailSchedulesFromEntities(entities) {
   const textEntities = entities
     .filter((item) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(item.type) && item.text)
@@ -512,6 +602,7 @@ function extractDetailSchedulesFromEntities(entities) {
   return {
     beamSizeById,
     slabInfo: extractSlabThicknessInfo(textEntities),
+    slabReinforcementSchedule: extractSlabReinforcementSchedule(textEntities),
   };
 }
 
@@ -1845,6 +1936,7 @@ module.exports = {
   textPoint,
   extractSlabThicknessInfo,
   extractDetailSchedulesFromEntities,
+  extractSlabReinforcementSchedule,
   mergeSlabThicknessInfo,
   isHorizontal,
   isVertical,

@@ -25,6 +25,7 @@ const {
   extractBeamIdFromMixedText,
   extractDetailSchedulesFromEntities,
   extractGridEvidence,
+  extractSlabReinforcementSchedule,
   extractSlabThicknessInfo,
   filterEntitiesOutsideDetailZones,
   filterEntitiesToFramingRegion,
@@ -1972,6 +1973,7 @@ async function readOneFramingQuantity(file, index, tempDir, itemType = "beam", g
         : 0,
       embeddedBeamSizeRows: Object.keys(embeddedDetailSchedules.beamSizeById || {}).length,
       embeddedSlabSpecRows: Object.keys(embeddedDetailSchedules.slabInfo?.slabSpecs || {}).length,
+      embeddedSlabReinforcementSchedule: embeddedDetailSchedules.slabReinforcementSchedule || {},
       gridPanelRows: gridPanelRows.length,
       gridAxes: grid.axes.length,
       gridDimensions: grid.dimensions.length,
@@ -1996,6 +1998,7 @@ function collectLinkedDetailSchedules(files, tempDir) {
   const linked = {
     beamSizeById: {},
     slabInfos: [],
+    slabReinforcementSchedule: {},
     detailFiles: [],
   };
 
@@ -2006,6 +2009,7 @@ function collectLinkedDetailSchedules(files, tempDir) {
     if (cached) {
       Object.assign(linked.beamSizeById, cached.beamSizeById || {});
       if (cached.slabInfo) linked.slabInfos.push(cached.slabInfo);
+      Object.assign(linked.slabReinforcementSchedule, cached.slabReinforcementSchedule || {});
       if (cached.detailFile) linked.detailFiles.push(cached.detailFile);
       return;
     }
@@ -2026,19 +2030,23 @@ function collectLinkedDetailSchedules(files, tempDir) {
     const schedules = extractDetailSchedulesFromEntities(entities);
     Object.assign(linked.beamSizeById, schedules.beamSizeById || {});
     if (schedules.slabInfo) linked.slabInfos.push(schedules.slabInfo);
+    Object.assign(linked.slabReinforcementSchedule, schedules.slabReinforcementSchedule || {});
     const beamSizeRows = Object.keys(schedules.beamSizeById || {}).length;
     const slabSpecRows = Object.keys(schedules.slabInfo?.slabSpecs || {}).length;
+    const slabReinforcementRows = Object.keys(schedules.slabReinforcementSchedule || {}).length;
     const cachedDetail = {
       beamSizeById: schedules.beamSizeById || {},
       slabInfo: schedules.slabInfo || null,
+      slabReinforcementSchedule: schedules.slabReinforcementSchedule || {},
       detailFile: null,
     };
-    if (beamSizeRows || slabSpecRows) {
+    if (beamSizeRows || slabSpecRows || slabReinforcementRows) {
       cachedDetail.detailFile = {
         fileName: file.name,
         sourceFormat,
         beamSizeRows,
         slabSpecRows,
+        slabReinforcementRows,
       };
       linked.detailFiles.push(cachedDetail.detailFile);
     }
@@ -4498,14 +4506,19 @@ function slabMarkFromRow(row = {}) {
     row.slabMark,
     row.slabNo,
     row.panelMark,
+    row.panelNo,
     row.mark,
     row.slabSchedule,
+    row.name,
     row.description,
     row.remarks,
   ];
+  // Panel identifiers are often written with a hyphen for readability ("S-20") while the
+  // schedule table itself keys marks without one ("S20") - match either and normalise to the
+  // table's own format so the lookup actually hits.
   for (const value of values) {
-    const match = String(value || "").match(/\bS\d+[A-Z]?\b/i);
-    if (match) return match[0].toUpperCase();
+    const match = String(value || "").match(/\bS[\s-]?(\d+[A-Z]?)\b/i);
+    if (match) return `S${match[1]}`.toUpperCase();
   }
   return "";
 }
@@ -4519,9 +4532,9 @@ function slabBbsSpecFromRow(row = {}, keys = [], fallback = null) {
   return cloneBbsSpec(fallback);
 }
 
-function slabBbsScheduleForRow(row = {}) {
+function slabBbsScheduleForRow(row = {}, externalSchedule = {}) {
   const mark = slabMarkFromRow(row);
-  const base = SLAB_MARK_BBS_SCHEDULE[mark] || {};
+  const base = externalSchedule[mark] || SLAB_MARK_BBS_SCHEDULE[mark] || {};
   const explicitThickness = row.slabThicknessMm || row.slabThickness || row.thickness || row.thicknessMm;
   const rowHeight = Number(row.height);
   const heightLooksLikeThickness = Number.isFinite(rowHeight) &&
@@ -4585,7 +4598,7 @@ function slabBoundaryLabel(row = {}, keys = [], fallback = "support") {
   return fallback;
 }
 
-function slabBbsRowsForPanel(row, index) {
+function slabBbsRowsForPanel(row, index, externalSchedule = {}) {
   const rawLengthMm = drawingLengthToMm(row.length || row.panelLength || row.longSpan);
   const rawBreadthMm = drawingLengthToMm(row.breadth || row.width || row.shortSpan);
   const lengthMm = roundBbsDimensionMm(rawLengthMm, 5);
@@ -4593,7 +4606,7 @@ function slabBbsRowsForPanel(row, index) {
   if (!lengthMm || !breadthMm) return [];
 
   const panelNo = row.panelNo || row.name || `P${index + 1}`;
-  const schedule = slabBbsScheduleForRow(row);
+  const schedule = slabBbsScheduleForRow(row, externalSchedule);
   const thicknessMm = roundBbsDimensionMm(schedule.thicknessMm || 150, 5);
   const longMm = roundBbsDimensionMm(Math.max(lengthMm, breadthMm), 5);
   const shortMm = roundBbsDimensionMm(Math.min(lengthMm, breadthMm), 5);
@@ -4809,7 +4822,7 @@ function createSlabSteelBbsWorkbookHtml(packageInfo) {
     .filter(Boolean);
   const sourceFiles = (measuredFiles.length ? measuredFiles : files.map((file) => file.name)).join(", ");
   const floorName = rows.find((row) => row.floor)?.floor || packageInfo.floor || "Selected Floor";
-  const bbsRows = rows.flatMap((row, index) => slabBbsRowsForPanel(row, index));
+  const bbsRows = rows.flatMap((row, index) => slabBbsRowsForPanel(row, index, summary.slabReinforcementSchedule || {}));
   const dataRows = [
     `<tr class="group-row"><td>1.0</td><td colspan="${SLAB_BBS_DIA_COLUMNS.length + 16}">${escapeHtml(floorName)} Slab</td></tr>`,
     ...bbsRows.map((entry) => slabBbsRowHtml(entry, SLAB_BBS_DIA_COLUMNS)),
@@ -6807,7 +6820,13 @@ async function handleExtractFramingQuantities(req, res) {
       embeddedBeamSizeRows: plans.reduce((sum, plan) => sum + Number(plan.summary?.embeddedBeamSizeRows || 0), 0),
       embeddedSlabSpecRows: plans.reduce((sum, plan) => sum + Number(plan.summary?.embeddedSlabSpecRows || 0), 0),
       measuredDrawingCount: measuredFiles.length,
+      slabReinforcementSchedule: Object.assign(
+        {},
+        ...plans.map((plan) => plan.summary?.embeddedSlabReinforcementSchedule || {}),
+        linkedSchedules.slabReinforcementSchedule || {},
+      ),
     };
+    summary.slabReinforcementScheduleMarks = Object.keys(summary.slabReinforcementSchedule).length;
     summary.accuracyAudit = buildAccuracyAudit({ itemType, plans, extractedRows, rows });
     summary.ruleAudit = buildRuleAudit({
       itemType,
