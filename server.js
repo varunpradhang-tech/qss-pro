@@ -4147,8 +4147,10 @@ function bbsXmlStyles() {
     <Style ss:ID="Group"><Font ss:FontName="Arial" ss:Size="12" ss:Bold="1"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/></Style>
     <Style ss:ID="Header"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>${BBS_XML_BORDERS}</Style>
     <Style ss:ID="Cell"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="CellDec"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><NumberFormat ss:Format="0.000"/>${BBS_XML_BORDERS}</Style>
     <Style ss:ID="CellLeft"><Font ss:FontName="Arial" ss:Size="10"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
     <Style ss:ID="Bold"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
+    <Style ss:ID="BoldDec"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><NumberFormat ss:Format="0.000"/>${BBS_XML_BORDERS}</Style>
     <Style ss:ID="BoldLeft"><Font ss:FontName="Arial" ss:Size="10" ss:Bold="1"/><Alignment ss:Horizontal="Left" ss:Vertical="Center"/>${BBS_XML_BORDERS}</Style>
   </Styles>`;
 }
@@ -4288,7 +4290,7 @@ function renderSteelBbsSpreadsheet({
       bbsXmlCell(entry.noOfBar, { styleId: "Cell" }),
       bbsXmlCell(formatNumber(entry.cuttingLengthM, 3), {
         formula: `=(${r1c1Ref(rowNumber, 16, rowNumber, 7)}+${r1c1Ref(rowNumber, 16, rowNumber, 8)}+${r1c1Ref(rowNumber, 16, rowNumber, 9)}+${r1c1Ref(rowNumber, 16, rowNumber, 10)}+${r1c1Ref(rowNumber, 16, rowNumber, 11)})/1000-(${r1c1Ref(rowNumber, 16, rowNumber, 12)}*${bendMultiplier}*${r1c1Ref(rowNumber, 16, rowNumber, 5)}*0.001)+(${r1c1Ref(rowNumber, 16, rowNumber, 14)}*0.001*${r1c1Ref(rowNumber, 16, rowNumber, 13)})`,
-        styleId: "Cell",
+        styleId: "CellDec",
       }),
     ];
     const barDia = Math.round(Number(entry.dia || 0));
@@ -4298,7 +4300,7 @@ function renderSteelBbsSpreadsheet({
         totalsByDia[dia] += Number(entry.totalLengthM || 0);
         cells.push(bbsXmlCell(formatNumber(entry.totalLengthM, 3), {
           formula: `=${r1c1Ref(rowNumber, diaCol, rowNumber, 15)}*${r1c1Ref(rowNumber, diaCol, rowNumber, 16)}`,
-          styleId: "Cell",
+          styleId: "CellDec",
         }));
       } else {
         cells.push(bbsXmlCell(undefined, { styleId: "Cell" }));
@@ -4318,7 +4320,7 @@ function renderSteelBbsSpreadsheet({
       const diaCol = 17 + i;
       return bbsXmlCell(formatNumber(totalsByDia[dia], 3), {
         formula: `=SUM(${r1c1Ref(totalBarLengthRow, diaCol, firstDataRow, diaCol)}:${r1c1Ref(totalBarLengthRow, diaCol, lastDataRow, diaCol)})`,
-        styleId: "Bold",
+        styleId: "BoldDec",
       });
     }),
     bbsXmlCell(undefined, { styleId: "Bold" }),
@@ -4333,12 +4335,12 @@ function renderSteelBbsSpreadsheet({
       const diaCol = 17 + i;
       return bbsXmlCell(formatNumber(weightsByDia[dia], 3), {
         formula: `=${r1c1Ref(weightRow, diaCol, totalBarLengthRow, diaCol)}*(${dia}*${dia}/162)`,
-        styleId: "Bold",
+        styleId: "BoldDec",
       });
     }),
     bbsXmlCell(formatNumber(Object.values(weightsByDia).reduce((sum, value) => sum + value, 0), 3), {
       formula: `=SUM(${r1c1Ref(weightRow, remarksIndex, weightRow, 17)}:${r1c1Ref(weightRow, remarksIndex, weightRow, 16 + diaColumns.length)})`,
-      styleId: "Bold",
+      styleId: "BoldDec",
     }),
   ]));
 
@@ -5110,23 +5112,23 @@ function renderMbSpreadsheet({
       bbsXmlCell(entry.description, { type: "String", styleId: "CellLeft" }),
       bbsXmlCell(entry.unit, { type: "String", styleId: "Cell" }),
       bbsXmlCell(entry.nos, { styleId: "Cell" }),
-      bbsXmlCell(entry.length, { styleId: "Cell" }),
-      bbsXmlCell(entry.breadth, { styleId: "Cell" }),
-      bbsXmlCell(entry.height, { styleId: "Cell" }),
-      bbsXmlCell(entry.deduction || 0, { styleId: "Cell" }),
+      bbsXmlCell(formatNumber(entry.length), { styleId: "CellDec" }),
+      bbsXmlCell(formatNumber(entry.breadth), { styleId: "CellDec" }),
+      bbsXmlCell(formatNumber(entry.height), { styleId: "CellDec" }),
+      bbsXmlCell(formatNumber(entry.deduction || 0), { styleId: "CellDec" }),
     ];
     if (entry.formulaKind === "beam-concrete") {
       cells.push(bbsXmlCell(formatNumber(entry.total), {
         formula: `=MAX(${r1c1Ref(rowNumber, 9, rowNumber, 5)}*${r1c1Ref(rowNumber, 9, rowNumber, 6)}*${r1c1Ref(rowNumber, 9, rowNumber, 7)}-${r1c1Ref(rowNumber, 9, rowNumber, 8)},0)*${r1c1Ref(rowNumber, 9, rowNumber, 4)}`,
-        styleId: "Cell",
+        styleId: "CellDec",
       }));
     } else if (entry.formulaKind === "area") {
       cells.push(bbsXmlCell(formatNumber(entry.total), {
         formula: `=MAX(${r1c1Ref(rowNumber, 9, rowNumber, 5)}*${r1c1Ref(rowNumber, 9, rowNumber, 6)}-${r1c1Ref(rowNumber, 9, rowNumber, 8)},0)*${r1c1Ref(rowNumber, 9, rowNumber, 7)}*${r1c1Ref(rowNumber, 9, rowNumber, 4)}`,
-        styleId: "Cell",
+        styleId: "CellDec",
       }));
     } else {
-      cells.push(bbsXmlCell(formatNumber(entry.total), { styleId: "Cell" }));
+      cells.push(bbsXmlCell(formatNumber(entry.total), { styleId: "CellDec" }));
     }
     cells.push(bbsXmlCell(entry.remarks || "", { type: "String", styleId: "Cell" }));
     rows.push(bbsXmlRow(cells));
