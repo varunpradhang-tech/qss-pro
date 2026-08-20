@@ -4313,7 +4313,7 @@ function renderSteelBbsSpreadsheet({
   rows.push(bbsXmlRow([
     bbsXmlCell(undefined, { styleId: "Bold" }),
     bbsXmlCell("Total bar length by diameter", { type: "String", styleId: "BoldLeft" }),
-    ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
+    ...Array.from({ length: 14 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
     ...diaColumns.map((dia, i) => {
       const diaCol = 17 + i;
       return bbsXmlCell(formatNumber(totalsByDia[dia], 3), {
@@ -4328,7 +4328,7 @@ function renderSteelBbsSpreadsheet({
   rows.push(bbsXmlRow([
     bbsXmlCell(undefined, { styleId: "Bold" }),
     bbsXmlCell("Total steel weight kg", { type: "String", styleId: "BoldLeft" }),
-    ...Array.from({ length: remarksIndex - 3 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
+    ...Array.from({ length: 14 }, () => bbsXmlCell(undefined, { styleId: "Bold" })),
     ...diaColumns.map((dia, i) => {
       const diaCol = 17 + i;
       return bbsXmlCell(formatNumber(weightsByDia[dia], 3), {
