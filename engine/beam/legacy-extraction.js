@@ -2657,12 +2657,30 @@ function applyVerifiedBeamMeasurementRules(rows) {
   // bugs this session (xref beam-line/grid-dimension contamination, local support-face lookup,
   // and mergeCollinearBeamSpan gluing separately-numbered same-line beams together). 19 of the
   // original 24 entries turned out to be exactly what the general pipeline now computes on its
-  // own with no override needed, so they were removed as redundant. The 5 remaining below still
-  // disagree with the general pipeline's geometry (T2B47/T2B48/T2B49 by 200mm-2.9m) or have not
-  // yet been re-derived from first principles (T2B20/T2B26) - kept as explicit overrides until
-  // each is individually root-caused rather than silently trusting either side.
+  // own with no override needed, so they were removed as redundant. T2B20 was also removed after
+  // checking both of its parallel BEAM-layer edges directly: both measure 2.050m identically (not
+  // the hardcoded 2.25m), with the beam touching real column faces at zero distance on both ends
+  // - the general pipeline's 2.050m is the correct value, not the override.
+  //
+  // The 4 remaining below were each individually confirmed correct by inspecting the raw drawing
+  // rather than trusted on faith:
+  // - T2B47: two parallel BEAM-layer edges of DIFFERENT lengths exist 240mm apart (this beam's
+  //   own width) - the seed line search picked the shorter one (980mm, nearest the label) but a
+  //   second, complete outer edge runs the full 2.575m, confirming the pipeline's own seed
+  //   selection (not this override) is what still needs fixing for beams with an unequal-length
+  //   parallel-edge pair.
+  // - T2B48: the pipeline's single "length" (0.700m) actually matches this override's own
+  //   documented sideLengthM exactly - they were never in conflict, the override just also
+  //   captures the narrower bottomLengthM (0.465m) that a single length field cannot represent.
+  // - T2B49: the raw drawn beam line is one continuous, un-merged 4.409m run; the general
+  //   pipeline's support-bracket trim cuts it at a core/stair wall it does not terminate at - past
+  //   that wall sits a stair void (matching nearby UP/DN annotations) and slab mark S11, which is
+  //   this same beam's own linked slab mark, confirming the beam spans across the opening rather
+  //   than stopping at the wall.
+  // T2B26 (30mm gap, hardcoded 1.05m vs both drawn edges agreeing at 1.08m with no support
+  // touching either end to explain a further deduction) remains genuinely inconclusive either way
+  // and is kept as-is pending an actual measurement.
   const t2HorizontalCorrections = {
-    T2B20: { bottomLengthM: 2.25, sideLengthM: 2.25, rule: "Simple short beam; duplicate continuation fragments are collapsed into one member." },
     T2B26: { bottomLengthM: 1.05, sideLengthM: 1.05, rule: "Short beam; app must not merge the neighbouring bay/continuation into this member." },
     T2B47: { bottomLengthM: 2.575, sideLengthM: 2.575, rule: "Beam continues after the 0.980 m joint; one side is dotted for the full 2.575 m and the opposite continuous outside edge proves the same physical run." },
     T2B48: {
