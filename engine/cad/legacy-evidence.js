@@ -1054,10 +1054,19 @@ function scoredCadDimensionCandidatesForSpan(dimensions, span, orientation) {
         (orientation === "horizontal"
           ? dimension.x1 >= start - 3000 && dimension.x1 <= end + 3000 && Math.abs(dimension.y1 - axis) <= 8000
           : dimension.y1 >= start - 3000 && dimension.y1 <= end + 3000 && Math.abs(dimension.x1 - axis) <= 8000);
+      // A dimension whose own endpoints land near this beam's own endpoints is genuinely
+      // describing this span; a fixed 3500mm tolerance doesn't scale down for a short beam (on
+      // a ~2-4m beam, being off by 1.3m at each end is not "aligned"), and the other two
+      // qualification paths below required no endpoint proximity to the beam at all - either
+      // condition let an unrelated nearby dimension (a different beam's own span, an offset
+      // annotation) outrank correct geometry (confirmed against the real drawing: three beams
+      // with correct raw geometry, once support-trimming stopped cutting them short, still had
+      // this pick a smaller unrelated dimension because it satisfied axisDiff/textNearSpan alone).
+      const endpointToleranceMm = Math.max(600, expected * 0.15);
       const authoritativeAlignment = markedCadDimension && (
-        endpointDiff < 3500 ||
-        (axisDiff < 6500 && dimensionSelfConsistent) ||
-        textNearSpan
+        endpointDiff < endpointToleranceMm ||
+        (axisDiff < 6500 && dimensionSelfConsistent && endpointDiff < expected) ||
+        (textNearSpan && endpointDiff < expected)
       );
       const visible = /visible-dimension-text|text-dimension-label/i.test(String(dimension.valueSource || ""));
       // Same ranking as before, folded into one numeric score so it can be compared across
@@ -1841,6 +1850,18 @@ function beamTakeoffEvidenceCount(entities = []) {
   return count;
 }
 
+// An xref'd block name commonly bundles unrelated layers under one name (e.g. a block called
+// "XR_T2_Column_Typ-Fl" carries a grid/axis-reference layer, "AS-GRID", alongside its actual
+// column outlines) - matching a support-layer pattern against the full "block$seq$layer" string
+// lets the BLOCK's name ("...Column...") wrongly qualify a layer that's actually just a grid
+// reference line, never real column/wall geometry. Only the trailing layer segment describes
+// what the entity itself actually is.
+function layerNameSuffix(layer) {
+  const text = String(layer || "");
+  const parts = text.split(/\$\d+\$/);
+  return parts[parts.length - 1] || text;
+}
+
 function supportOutlinesFromDxf(entities) {
   const supportLayerPattern = /(^|[^A-Z])(COL|COLUMN|WALL)([^A-Z]|$)|RET\.?\s*WALL|RC\s*PARDI|A-Plan-Wall|S-WALL|WT\s*WALL|VIN_COLUMN/i;
   const fillEvidence = supportFillEvidenceFromDxf(entities);
@@ -1853,7 +1874,16 @@ function supportOutlinesFromDxf(entities) {
     // against the real drawing: a beam near the T2/T5 boundary got trimmed from 4.23m to 0.67m
     // by a "XR_T5_Column_Typ-Fl" grid line).
     .filter((item) => !isXrefSourcedEntity(item) || isOwnTowerXrefReference(item, towerToken))
-    .filter((item) => ["LWPOLYLINE", "LINE"].includes(item.type) && supportLayerPattern.test(item.layer || "") && !/CUT|SHAFT|VOID|OPEN|BEAM\s*(NO|SIZE)/i.test(item.layer || ""))
+    .filter((item) => {
+      if (!["LWPOLYLINE", "LINE"].includes(item.type)) return false;
+      const suffix = layerNameSuffix(item.layer);
+      // A grid/axis-reference layer is a drafting aid, never physical column/wall geometry, even
+      // when it lives inside a block whose own name happens to contain "Column" or "Wall"
+      // (confirmed against the real drawing: three beams with correct ~4.2-5m raw geometry were
+      // each trimmed down to roughly half their true length by "...Column_Typ-Fl$0$AS-GRID").
+      if (/\bGRID\b/i.test(suffix)) return false;
+      return supportLayerPattern.test(suffix) && !/CUT|SHAFT|VOID|OPEN|BEAM\s*(NO|SIZE)/i.test(suffix);
+    })
     .map((item) => {
       let bounds = null;
       if (item.type === "LWPOLYLINE") {
