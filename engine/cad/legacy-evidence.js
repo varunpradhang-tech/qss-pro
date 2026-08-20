@@ -1396,12 +1396,15 @@ function chooseMeasuredDimension({ cadDimension, gridDimension, geometryMm, pref
   // legible - it says nothing about whether that entity actually belongs to this span.
   // Dimension-matching functions (cadDimensionForSpan, markedFaceDimensionsNearLabel, etc.)
   // search a generous radius around a label/line and can attach an unrelated nearby
-  // dimension (a support/column width, an offset annotation) to this span. When the
-  // measured geometry disagrees with a "marked" value by more than 2x, that is a much
-  // stronger signal of a mismatched dimension than of a wrong geometry measurement, so it
-  // should not be trusted blindly ahead of geometry.
-  const cadWildlyDisagreesWithGeometry = cadMm > 0 && geometry > 0 && (cadMm < geometry * 0.5 || cadMm > geometry * 2);
-  const gridWildlyDisagreesWithGeometry = gridMm > 0 && geometry > 0 && (gridMm < geometry * 0.5 || gridMm > geometry * 2);
+  // dimension (a support/column width, an offset annotation) to this span. A genuine match
+  // for the same span is normally within a few percent of the measured geometry (drafting/
+  // rounding tolerance, confirmed repeatedly against the real drawing); the old 2x threshold
+  // let disagreements as large as 62% (a real observed case: 2.61m marked vs 4.23m actual)
+  // still pass as "close enough", when that is a much stronger signal of a mismatched
+  // dimension than of a wrong geometry measurement.
+  const disagreementToleranceMm = Math.max(150, geometry * 0.15);
+  const cadWildlyDisagreesWithGeometry = cadMm > 0 && geometry > 0 && Math.abs(cadMm - geometry) > disagreementToleranceMm;
+  const gridWildlyDisagreesWithGeometry = gridMm > 0 && geometry > 0 && Math.abs(gridMm - geometry) > disagreementToleranceMm;
 
   let selected = values[0];
   if (cadGridAgree) selected = { source: "cad-grid-agree", valueMm: cadMm };
