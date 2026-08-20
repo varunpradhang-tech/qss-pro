@@ -1594,6 +1594,48 @@ function isXrefSourcedEntity(entity) {
   return looksXrefBound(entity?.sourceBlock) || looksXrefBound(entity?.layer);
 }
 
+// Repeated-floor drawings commonly xref a tower's OWN typical column/grid layout onto every
+// level (e.g. "XR_T2_Column_Typ-Fl") rather than redrawing it, alongside genuinely foreign
+// geometry from an adjacent tower sharing the same basement grid (e.g. "XR_T5_Column_Typ-Fl").
+// isXrefSourcedEntity can't tell those apart; this can, by checking whether the reference names
+// this tower specifically and no other.
+function isOwnTowerXrefReference(entity, towerToken) {
+  if (!towerToken) return false;
+  const source = `${entity?.layer || ""} ${entity?.sourceBlock || ""}`;
+  const escaped = String(towerToken).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const ownPattern = new RegExp(`(?:^|[^A-Za-z0-9])(?:tower\\s*)?${escaped}(?:[^A-Za-z0-9]|$)`, "i");
+  const otherTowerPattern = /(?:^|[^A-Za-z0-9])(?:tower\s*(\d+)|T(\d+))(?:[^A-Za-z0-9]|$)/gi;
+  if (!ownPattern.test(source)) return false;
+  const ownNumber = String(towerToken).match(/\d+/)?.[0];
+  let match;
+  while ((match = otherTowerPattern.exec(source))) {
+    const foundNumber = match[1] || match[2];
+    if (ownNumber && foundNumber && foundNumber !== ownNumber) return false;
+  }
+  return true;
+}
+
+// Non-xref layer names in this drawing carry the tower token directly (e.g. "BEAM NO T2",
+// "SLABS NO T2"), so the primary tower can be read straight off whichever layers the trusted
+// (non-xref) geometry actually uses, without hardcoding a specific project's tower number.
+function detectPrimaryTowerToken(entities) {
+  const counts = {};
+  for (const entity of entities) {
+    if (isXrefSourcedEntity(entity)) continue;
+    const match = String(entity?.layer || "").match(/\bT(\d+)\b/i);
+    if (match) counts[match[1]] = (counts[match[1]] || 0) + 1;
+  }
+  let best = null;
+  let bestCount = 0;
+  for (const [num, count] of Object.entries(counts)) {
+    if (count > bestCount) {
+      best = num;
+      bestCount = count;
+    }
+  }
+  return best ? `T${best}` : null;
+}
+
 function nonPrimaryDetailZones(textEntities = []) {
   const detailTitlePattern = /\b(?:SLAB\s+PROFILE|PROFILE|BEAM\s+DETAIL|BEAM\s+SCHEDULE|SECTION|DETAIL|BBS|BAR\s+BENDING|REINFORCEMENT|STEEL\s+DETAIL|COLUMN\s+SCHEDULE)\b/i;
   return textEntities
@@ -1755,7 +1797,15 @@ function beamTakeoffEvidenceCount(entities = []) {
 function supportOutlinesFromDxf(entities) {
   const supportLayerPattern = /(^|[^A-Z])(COL|COLUMN|WALL)([^A-Z]|$)|RET\.?\s*WALL|RC\s*PARDI|A-Plan-Wall|S-WALL|WT\s*WALL|VIN_COLUMN/i;
   const fillEvidence = supportFillEvidenceFromDxf(entities);
+  const towerToken = detectPrimaryTowerToken(entities);
   return entities
+    // A support outline used to trim a beam's own span to a real column/wall face has to
+    // actually belong to this tower - an adjacent tower's xref'd column/grid layout can share
+    // this drawing's basement grid and coincidentally sit right where a beam's label is, which
+    // otherwise silently trims a real beam down to a fraction of its true length (confirmed
+    // against the real drawing: a beam near the T2/T5 boundary got trimmed from 4.23m to 0.67m
+    // by a "XR_T5_Column_Typ-Fl" grid line).
+    .filter((item) => !isXrefSourcedEntity(item) || isOwnTowerXrefReference(item, towerToken))
     .filter((item) => ["LWPOLYLINE", "LINE"].includes(item.type) && supportLayerPattern.test(item.layer || "") && !/CUT|SHAFT|VOID|OPEN|BEAM\s*(NO|SIZE)/i.test(item.layer || ""))
     .map((item) => {
       let bounds = null;
