@@ -2150,4 +2150,5 @@ module.exports = {
   round3,
   entityCollectionBounds,
   extractBeamIdFromMixedText,
+  isXrefSourcedEntity,
 };

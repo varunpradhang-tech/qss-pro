@@ -14,6 +14,7 @@ const {
   finiteMin,
   geometryKey,
   isBeamGeometryLayer,
+  isXrefSourcedEntity,
   lineLength,
   lineMinMax,
   lineOrientation,
@@ -2814,8 +2815,12 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     .filter((item) => item.size && Number.isFinite(item.x) && Number.isFinite(item.y))
     .filter((item) => !/^QSS_/i.test(item.layer || "")));
 
+  // Xref blocks (e.g. "XR_T2_Column_Typ-Fl$0$AS-BEAM") insert a typical-floor beam layout as a
+  // visual reference overlay; its geometry does not necessarily match this specific floor's
+  // actual beam run and must never be measured as if it were live geometry, even when it is the
+  // tower's own xref (unlike support faces, where the tower's own column-grid xref is trustworthy).
   const beamLines = entities
-    .filter((item) => isBeamGeometryLayer(item.layer || "") && item.type === "LINE")
+    .filter((item) => isBeamGeometryLayer(item.layer || "") && item.type === "LINE" && !isXrefSourcedEntity(item))
     .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y) && Number.isFinite(item.x2) && Number.isFinite(item.y2))
     .map((item) => ({ ...item, lengthMm: lineLength(item), ...lineMinMax(item) }))
     .filter((item) => item.lengthMm > 250);
