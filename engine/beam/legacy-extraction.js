@@ -19,6 +19,9 @@ const {
   lineOrientation,
   markedFaceDimensionsForBeam,
   markedFaceDimensionsNearLabel,
+  scoredMarkedFaceDimensionCandidatesForBeam,
+  scoredCadDimensionCandidatesForSpan,
+  resolveMarkedFaceDimensionOwnership,
   mergedCoverageIntervals,
   minAbsDistance,
   nearest,
@@ -2821,7 +2824,14 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
   const lineDistanceLimitMm = dedicatedBeamLayers ? 700 : 1500;
   const sizeDistanceLimitMm = dedicatedBeamLayers ? 30000 : 1500;
 
-  const rows = beamLabels.map((label) => {
+  // A single marked dimension entity can legitimately pass one beam's own "does this describe
+  // my span" filters while ALSO passing a neighbouring beam's (both beams' own geometry can
+  // genuinely overlap the same nearby annotation) - resolving that requires seeing every beam's
+  // candidates at once, not deciding beam-by-beam. Compute each beam's own measured line once
+  // up front, gather its scored dimension candidates, resolve cross-beam ownership globally
+  // (best-fitting beam wins each contested dimension), then build the final rows using that
+  // resolved ownership.
+  const precomputed = beamLabels.map((label) => {
     const labelOrientation = textOrientation(label);
     const orientedBeamLines = beamLines.filter((item) => lineOrientation(item) === labelOrientation);
     const orientedLine = orientedBeamLines.length ? nearest(orientedBeamLines, label, pointToSegmentDistance) : { item: null, distance: Infinity };
@@ -2845,7 +2855,32 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     const geometryLengthMm = merged.mergedLengthMm || line.item?.lengthMm || 0;
     const finalGeometryLengthMm = measuredLine ? (measuredLine.lengthMm || lineLength(measuredLine)) : geometryLengthMm;
     const orientation = lineOrientation(measuredLine);
-    const cadDimension = cadDimensionForSpan(grid.dimensions, measuredLine, orientation);
+    const beamKey = `${label.text}@${Math.round(label.x || 0)},${Math.round(label.y || 0)}`;
+    // Two independent selection mechanisms can each pick a dimension for this beam - the
+    // marked-inner/outer-face reader above, and cadDimensionForSpan's own single-best-match
+    // search (used for the "cad-dimension" basis). Both compete for the same pool of real CAD
+    // dimension entities, so both need to feed the SAME ownership resolution or a dimension
+    // rejected by one mechanism can simply be re-claimed by another beam through the other
+    // mechanism (confirmed against the real drawing: fixing only the marked-face path left
+    // T2B3/T2B14/T2B23/T2B30/T2B41 still colliding via cadDimensionForSpan).
+    const scoredCandidates = scoredMarkedFaceDimensionCandidatesForBeam(grid.dimensions, label, measuredLine, orientation, widthMm)
+      .concat(scoredCadDimensionCandidatesForSpan(grid.dimensions, measuredLine, orientation));
+    return {
+      label, beamKey, line, size, widthMm, depthMm, beamLinesForLabel, merged, trimmed, bracketTrimmed,
+      supportTrimmed, edgeTrimmed, extended, measuredLine, geometryLengthMm, finalGeometryLengthMm,
+      orientation, scoredCandidates,
+    };
+  });
+  const ownerByKey = resolveMarkedFaceDimensionOwnership(
+    precomputed.map((pre) => ({ beamKey: pre.beamKey, candidates: pre.scoredCandidates })),
+  );
+
+  const rows = precomputed.map((pre) => {
+    const {
+      label, beamKey, line, size, widthMm, depthMm, beamLinesForLabel, merged, trimmed, bracketTrimmed,
+      supportTrimmed, edgeTrimmed, extended, measuredLine, geometryLengthMm, finalGeometryLengthMm, orientation,
+    } = pre;
+    const cadDimension = cadDimensionForSpan(grid.dimensions, measuredLine, orientation, { beamKey, ownerByKey });
     const support = beamSupportConditions(measuredLine, textEntities, supports);
     const hasTerminalSupport = support.conditions.some((item) => item.type !== "open");
     const dimensionChoice = chooseMeasuredDimension({
@@ -2855,7 +2890,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
       preferGeometryWhenCadExceeds: hasTerminalSupport,
     });
     const pairedEdgeDimension = !cadDimension && (merged.mergedSegments?.length || 0) > 1;
-    const markedFaceDimensions = markedFaceDimensionsForBeam(grid.dimensions, label, measuredLine, orientation, widthMm);
+    const markedFaceDimensions = markedFaceDimensionsForBeam(grid.dimensions, label, measuredLine, orientation, widthMm, { beamKey, ownerByKey });
     const rawMarkedFaceValuesMm = markedFaceDimensions
       .map((dimension) => Number(dimension.valueMm || 0))
       .filter((value) => value > 0 && value <= MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM)

@@ -1030,15 +1030,15 @@ function gridDimensionBetween(grid, fromAxis, toAxis, kind) {
   return candidates[0]?.dimension || null;
 }
 
-function cadDimensionForSpan(dimensions, span, orientation) {
-  if (!span || !Array.isArray(dimensions)) return null;
+function scoredCadDimensionCandidatesForSpan(dimensions, span, orientation) {
+  if (!span || !Array.isArray(dimensions)) return [];
   const expected = orientation === "horizontal"
     ? Math.abs(span.x2 - span.x)
     : Math.abs(span.y2 - span.y);
   const start = orientation === "horizontal" ? Math.min(span.x, span.x2) : Math.min(span.y, span.y2);
   const end = orientation === "horizontal" ? Math.max(span.x, span.x2) : Math.max(span.y, span.y2);
   const axis = orientation === "horizontal" ? (span.y + span.y2) / 2 : (span.x + span.x2) / 2;
-  const candidates = dimensions
+  return dimensions
     .filter((dimension) => dimension.orientation === orientation)
     .map((dimension) => {
       const dStart = orientation === "horizontal" ? Math.min(dimension.x1 || 0, dimension.x2 || 0) : Math.min(dimension.y1 || 0, dimension.y2 || 0);
@@ -1059,19 +1059,24 @@ function cadDimensionForSpan(dimensions, span, orientation) {
         (axisDiff < 6500 && dimensionSelfConsistent) ||
         textNearSpan
       );
-      return { dimension, endpointDiff, axisDiff, valueDiff, markedCadDimension, dimensionSelfConsistent, authoritativeAlignment };
+      const visible = /visible-dimension-text|text-dimension-label/i.test(String(dimension.valueSource || ""));
+      // Same ranking as before, folded into one numeric score so it can be compared across
+      // different beams' candidate lists (authoritative/visible dimensions still sort first via
+      // large fixed offsets, preserving the original tiered ordering).
+      const score = (authoritativeAlignment ? 0 : 1e9) + (visible ? 0 : 1e6) +
+        (endpointDiff + valueDiff * 0.15 + axisDiff * 0.05);
+      return { dimension, key: dimensionEntityKey(dimension), endpointDiff, axisDiff, valueDiff, markedCadDimension, dimensionSelfConsistent, authoritativeAlignment, score };
     })
     .filter((item) =>
       item.authoritativeAlignment ||
       (item.endpointDiff < 2500 && item.valueDiff < Math.max(1000, expected * 0.18)) ||
       (item.valueDiff < 1500 && item.axisDiff < 8000))
-    .sort((a, b) => {
-      if (a.authoritativeAlignment !== b.authoritativeAlignment) return a.authoritativeAlignment ? -1 : 1;
-      const aVisible = /visible-dimension-text|text-dimension-label/i.test(String(a.dimension.valueSource || ""));
-      const bVisible = /visible-dimension-text|text-dimension-label/i.test(String(b.dimension.valueSource || ""));
-      if (aVisible !== bVisible) return aVisible ? -1 : 1;
-      return (a.endpointDiff + a.valueDiff * 0.15 + a.axisDiff * 0.05) - (b.endpointDiff + b.valueDiff * 0.15 + b.axisDiff * 0.05);
-    });
+    .sort((a, b) => a.score - b.score);
+}
+
+function cadDimensionForSpan(dimensions, span, orientation, { beamKey, ownerByKey } = {}) {
+  const candidates = scoredCadDimensionCandidatesForSpan(dimensions, span, orientation)
+    .filter((item) => !ownerByKey || !ownerByKey.has(item.key) || ownerByKey.get(item.key) === beamKey);
   return candidates[0]?.dimension || null;
 }
 
@@ -1240,7 +1245,21 @@ function cadDimensionForPanelSpan(dimensions, span, orientation) {
   return candidates[0]?.dimension || null;
 }
 
-function markedFaceDimensionsForBeam(dimensions, label, span, orientation, widthMm = 0) {
+// A dimension entity's identity for cross-beam ownership purposes - two beams "claiming" the
+// same physical dimension line should resolve to the same key regardless of which beam's search
+// found it.
+function dimensionEntityKey(dimension) {
+  return [
+    dimension.orientation || "",
+    Math.round(dimension.x1 || 0),
+    Math.round(dimension.y1 || 0),
+    Math.round(dimension.x2 || 0),
+    Math.round(dimension.y2 || 0),
+    Math.round(dimension.valueMm || 0),
+  ].join(":");
+}
+
+function scoredMarkedFaceDimensionCandidatesForBeam(dimensions, label, span, orientation, widthMm = 0) {
   if (!label || !span || !Array.isArray(dimensions) || !dimensions.length) return [];
   const axis = orientation === "horizontal" ? (span.y + span.y2) / 2 : (span.x + span.x2) / 2;
   const spanStart = orientation === "horizontal" ? Math.min(span.x, span.x2) : Math.min(span.y, span.y2);
@@ -1249,7 +1268,7 @@ function markedFaceDimensionsForBeam(dimensions, label, span, orientation, width
   const labelCross = orientation === "horizontal" ? label.y : label.x;
   const axisLimit = Math.max(2500, Math.min(9000, Math.max(widthMm, 450) * 12));
   const alongLimit = Math.max(2500, Math.min(12000, Math.max(spanEnd - spanStart, widthMm * 6, 2500)));
-  const candidates = dimensions
+  return dimensions
     .filter((dimension) => dimension.orientation === orientation)
     .map((dimension) => {
       const dStart = orientation === "horizontal" ? Math.min(dimension.x1 || 0, dimension.x2 || 0) : Math.min(dimension.y1 || 0, dimension.y2 || 0);
@@ -1260,7 +1279,8 @@ function markedFaceDimensionsForBeam(dimensions, label, span, orientation, width
       const labelDistance = Math.abs(dMid - labelAlong);
       const overlap = Math.max(0, Math.min(spanEnd, dEnd) - Math.max(spanStart, dStart));
       const nearLabelSpan = labelAlong >= dStart - alongLimit && labelAlong <= dEnd + alongLimit;
-      return { dimension, dStart, dEnd, dMid, axisDiff, labelDistance, overlap, nearLabelSpan };
+      const score = axisDiff + labelDistance * 0.1 - overlap * 0.02;
+      return { dimension, key: dimensionEntityKey(dimension), dStart, dEnd, dMid, axisDiff, labelDistance, overlap, nearLabelSpan, score };
     })
     .filter((item) => item.dimension.valueMm >= 250 && item.dimension.valueMm <= 60000)
     .filter((item) => item.axisDiff <= axisLimit)
@@ -1273,7 +1293,34 @@ function markedFaceDimensionsForBeam(dimensions, label, span, orientation, width
     // require that whenever the beam's own span is known, falling back to the looser proximity
     // filters above only when it isn't (span degenerate/unavailable).
     .filter((item) => !(spanEnd > spanStart) || item.overlap > 0)
-    .sort((a, b) => (a.axisDiff + a.labelDistance * 0.1 - a.overlap * 0.02) - (b.axisDiff + b.labelDistance * 0.1 - b.overlap * 0.02));
+    .sort((a, b) => a.score - b.score);
+}
+
+// Two different beams can each independently pass the single-beam filters above for the SAME
+// physical dimension entity (their own measured spans both genuinely overlap it, e.g. two beams
+// framing into either side of the same bay). Without resolving that conflict, both silently
+// report the same length for what are two different beams (confirmed against the real drawing:
+// T2B14/T2B23/T2B24/T2B30/T2B41 all reading an identical 2.705m). Give the dimension to whichever
+// beam fits it best (lowest score) and let every other claimant fall back to its next candidate
+// or to geometry, the same way it would if this dimension had never matched at all.
+function resolveMarkedFaceDimensionOwnership(beamCandidateLists) {
+  const bestScoreByKey = new Map();
+  const ownerByKey = new Map();
+  for (const { beamKey, candidates } of beamCandidateLists) {
+    for (const item of candidates) {
+      const existing = bestScoreByKey.get(item.key);
+      if (existing === undefined || item.score < existing) {
+        bestScoreByKey.set(item.key, item.score);
+        ownerByKey.set(item.key, beamKey);
+      }
+    }
+  }
+  return ownerByKey;
+}
+
+function markedFaceDimensionsForBeam(dimensions, label, span, orientation, widthMm = 0, { beamKey, ownerByKey } = {}) {
+  const candidates = scoredMarkedFaceDimensionCandidatesForBeam(dimensions, label, span, orientation, widthMm)
+    .filter((item) => !ownerByKey || !ownerByKey.has(item.key) || ownerByKey.get(item.key) === beamKey);
   const unique = [];
   for (const item of candidates) {
     if (unique.some((existing) => Math.abs(existing.valueMm - item.dimension.valueMm) <= 25)) continue;
@@ -2024,6 +2071,7 @@ module.exports = {
   findGridAxis,
   gridDimensionBetween,
   cadDimensionForSpan,
+  scoredCadDimensionCandidatesForSpan,
   dimensionPointNumber,
   dimensionTextPoint,
   dimensionEvidenceBounds,
@@ -2035,6 +2083,9 @@ module.exports = {
   cadDimensionForPanelSpan,
   markedFaceDimensionsForBeam,
   markedFaceDimensionsNearLabel,
+  scoredMarkedFaceDimensionCandidatesForBeam,
+  resolveMarkedFaceDimensionOwnership,
+  dimensionEntityKey,
   chooseMeasuredDimension,
   finiteMin,
   finiteMax,
