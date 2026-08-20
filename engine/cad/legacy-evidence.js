@@ -1892,8 +1892,9 @@ function supportOutlinesFromDxf(entities) {
     })
     .map((item) => {
       let bounds = null;
+      let points = null;
       if (item.type === "LWPOLYLINE") {
-        const points = item.vertices.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+        points = item.vertices.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
         if (points.length < 2) return null;
         bounds = boundsFromPoints(points);
       } else if (Number.isFinite(item.x) && Number.isFinite(item.y) && Number.isFinite(item.x2) && Number.isFinite(item.y2)) {
@@ -1907,6 +1908,12 @@ function supportOutlinesFromDxf(entities) {
       return {
         layer: item.layer,
         ...bounds,
+        // Kept alongside the bounding box so a stepped/jogged support outline (a retaining
+        // wall following an irregular perimeter is the common case) can be trimmed against its
+        // actual local face instead of the bounding box's global extreme, which silently picks
+        // a jog from a completely different position along the wall (see
+        // localSupportEdgeAtAxis).
+        points,
         centerX: (bounds.minX + bounds.maxX) / 2,
         centerY: (bounds.minY + bounds.maxY) / 2,
         widthM,
@@ -1918,6 +1925,43 @@ function supportOutlinesFromDxf(entities) {
       };
     })
     .filter(Boolean);
+}
+
+// A support's bounding box only equals its true face where the outline is a simple rectangle.
+// A stepped/jogged wall (a retaining wall following an irregular basement perimeter is the
+// common real case) has a face position that varies along its run; trimming every beam against
+// the bounding box's single global extreme picks whichever jog happens to be furthest out, even
+// when that jog is nowhere near the beam being trimmed (confirmed against the real drawing: a
+// beam's support face was read as 811204 from a jog 20m away along the wall, when the wall's
+// actual face at the beam's own position was 810799 - a 405mm error that fed directly into the
+// beam's trimmed length). Walks the support's polyline segments and returns the coordinate of
+// whichever near-perpendicular segment's own span actually contains the beam's axis position,
+// falling back to null (letting the caller use the bounding box) when there is no polyline or no
+// segment covers that position.
+function localSupportEdgeAtAxis(support, orientation, axis) {
+  const points = Array.isArray(support?.points) ? support.points : null;
+  if (!points || points.length < 2) return null;
+  let best = null;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = points[i];
+    const b = points[i + 1];
+    if (orientation === "vertical") {
+      const dx = Math.abs(a.x - b.x);
+      if (dx < 1) continue;
+      const segMin = Math.min(a.x, b.x);
+      const segMax = Math.max(a.x, b.x);
+      if (axis < segMin - 5 || axis > segMax + 5) continue;
+      if (!best || dx > best.span) best = { value: (a.y + b.y) / 2, span: dx };
+    } else {
+      const dy = Math.abs(a.y - b.y);
+      if (dy < 1) continue;
+      const segMin = Math.min(a.y, b.y);
+      const segMax = Math.max(a.y, b.y);
+      if (axis < segMin - 5 || axis > segMax + 5) continue;
+      if (!best || dy > best.span) best = { value: (a.x + b.x) / 2, span: dy };
+    }
+  }
+  return best ? best.value : null;
 }
 
 function supportFillEvidenceFromDxf(entities) {
@@ -2148,6 +2192,7 @@ module.exports = {
   filterEntitiesOutsideDetailZones,
   beamTakeoffEvidenceCount,
   supportOutlinesFromDxf,
+  localSupportEdgeAtAxis,
   supportFillEvidenceFromDxf,
   nearestSupportFillEvidence,
   round3,

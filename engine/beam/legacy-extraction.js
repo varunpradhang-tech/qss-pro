@@ -16,6 +16,7 @@ const {
   isBeamGeometryLayer,
   isXrefSourcedEntity,
   lineLength,
+  localSupportEdgeAtAxis,
   lineMinMax,
   lineOrientation,
   markedFaceDimensionsForBeam,
@@ -824,6 +825,8 @@ function trimBeamSpanAtTerminalSupportFace(line, label, beamLabels, beamLines, s
   }
 
   function supportInterval(support) {
+    const localEdge = localSupportEdgeAtAxis(support, orientation, axis);
+    if (Number.isFinite(localEdge)) return { min: localEdge, max: localEdge };
     return orientation === "horizontal"
       ? { min: support.minX, max: support.maxX }
       : { min: support.minY, max: support.maxY };
@@ -905,6 +908,8 @@ function trimBeamSpanToNearestSupportBracket(line, label, beamLabels, supports, 
   }
 
   function supportInterval(support) {
+    const localEdge = localSupportEdgeAtAxis(support, orientation, axis);
+    if (Number.isFinite(localEdge)) return { min: localEdge, max: localEdge };
     return orientation === "horizontal"
       ? { min: support.minX, max: support.maxX }
       : { min: support.minY, max: support.maxY };
@@ -2885,16 +2890,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
       label, beamKey, line, size, widthMm, depthMm, beamLinesForLabel, merged, trimmed, bracketTrimmed,
       supportTrimmed, edgeTrimmed, extended, measuredLine, geometryLengthMm, finalGeometryLengthMm, orientation,
     } = pre;
-    const cadDimension = cadDimensionForSpan(grid.dimensions, measuredLine, orientation, { beamKey, ownerByKey });
-    const support = beamSupportConditions(measuredLine, textEntities, supports);
-    const hasTerminalSupport = support.conditions.some((item) => item.type !== "open");
-    const dimensionChoice = chooseMeasuredDimension({
-      cadDimension,
-      gridDimension: null,
-      geometryMm: finalGeometryLengthMm,
-      preferGeometryWhenCadExceeds: hasTerminalSupport,
-    });
-    const pairedEdgeDimension = !cadDimension && (merged.mergedSegments?.length || 0) > 1;
+    const rawCadDimension = cadDimensionForSpan(grid.dimensions, measuredLine, orientation, { beamKey, ownerByKey });
     const markedFaceDimensions = markedFaceDimensionsForBeam(grid.dimensions, label, measuredLine, orientation, widthMm, { beamKey, ownerByKey });
     const rawMarkedFaceValuesMm = markedFaceDimensions
       .map((dimension) => Number(dimension.valueMm || 0))
@@ -2915,6 +2911,29 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     const markedFaceDimensionsLookLikeOffsets = hasTwoMarkedFaceLengths &&
       !markedFaceDimensionsAreCredibleBeamRun(markedFaceValuesMm, finalGeometryLengthMm, widthMm);
     const useMarkedFaceDimensionsAsRun = hasTwoMarkedFaceLengths && !markedFaceDimensionsLookLikeOffsets;
+    // cadDimensionForSpan and markedFaceDimensionsForBeam both search the same pool of nearby
+    // CAD dimension entities and can independently latch onto the very same one. If the marked-
+    // face check above just rejected this beam's whole candidate set as not credible (geometry
+    // disagrees too much to be this beam's own face pair), and cadDimensionForSpan's pick is one
+    // of those same rejected values, it is almost certainly the identical mismatched dimension
+    // re-surfacing through the other path rather than independent confirmation - so it must not
+    // be trusted just because chooseMeasuredDimension's percentage gap looked small (confirmed
+    // against the real drawing: T2B87's cadDimensionForSpan pick of 4.86m was one of the three
+    // values markedFaceDimensionsAreCredibleBeamRun had just rejected for this same beam, while
+    // the true length, 4.615m, matched geometry almost exactly).
+    const cadDimensionIsRejectedMarkedValue = markedFaceDimensionsLookLikeOffsets &&
+      rawCadDimension &&
+      rawMarkedFaceValuesMm.some((value) => Math.abs(value - rawCadDimension.valueMm) <= 25);
+    const cadDimension = cadDimensionIsRejectedMarkedValue ? null : rawCadDimension;
+    const support = beamSupportConditions(measuredLine, textEntities, supports);
+    const hasTerminalSupport = support.conditions.some((item) => item.type !== "open");
+    const dimensionChoice = chooseMeasuredDimension({
+      cadDimension,
+      gridDimension: null,
+      geometryMm: finalGeometryLengthMm,
+      preferGeometryWhenCadExceeds: hasTerminalSupport,
+    });
+    const pairedEdgeDimension = !cadDimension && (merged.mergedSegments?.length || 0) > 1;
     const lengthMm = useMarkedFaceDimensionsAsRun
       ? markedFaceValuesMm[markedFaceValuesMm.length - 1]
       : dimensionChoice.valueMm || finalGeometryLengthMm;
