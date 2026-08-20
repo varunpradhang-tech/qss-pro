@@ -466,6 +466,23 @@ function extractSlabThicknessInfo(textEntities) {
   return { slabMarks, thicknessTexts, byMark, slabSpecs, defaultThicknessMm, defaultNote };
 }
 
+// Mirrors the slab "U.N.O." default-thickness note above, but for a drawing's general beam-depth
+// note (e.g. "NOTE:-1) DEPTH OF BEAM AS 650MM WIDTH AS PER PLAN & WILL BE CONFIRM AFTER THE
+// ANALYSIS") - the one drawing-wide fact that applies whenever a beam's own local size text can't
+// be trusted, so a borrowed unrelated callout's depth doesn't get taken at face value.
+function extractBeamDepthDefaultNote(textEntities) {
+  const nonXrefTextEntities = textEntities.filter((item) => !isXrefSourcedEntity(item));
+  for (const item of nonXrefTextEntities) {
+    const text = String(item.text || "").toUpperCase();
+    const match = text.match(/DEPTH\s+OF\s+BEAM\S*\s+AS\s+(\d{2,4})\s*MM/);
+    const depthMm = Number(match?.[1] || 0);
+    if (depthMm >= 300 && depthMm <= 1600) {
+      return { depthMm, sourceText: item.text, basis: "default-beam-depth-note" };
+    }
+  }
+  return null;
+}
+
 function parseSlabScheduleBarSpec(text) {
   const match = String(text || "").match(/T\s*(\d+)\s*@\s*(\d+)/i);
   if (!match) return null;
@@ -1898,7 +1915,13 @@ function supportOutlinesFromDxf(entities) {
       // (confirmed against the real drawing: three beams with correct ~4.2-5m raw geometry were
       // each trimmed down to roughly half their true length by "...Column_Typ-Fl$0$AS-GRID").
       if (/\bGRID\b/i.test(suffix)) return false;
-      return supportLayerPattern.test(suffix) && !/CUT|SHAFT|VOID|OPEN|BEAM\s*(NO|SIZE)/i.test(suffix);
+      // The architect's generic "A-WALL" layer (and its "A-WALL-CILL" window-sill variant) is an
+      // xref annotation layer, not a structural face - it has no fill/hatch backing it (confirmed
+      // against the real drawing: a beam's own correct 4.41m/3.2m/2.315m spans were each chopped
+      // by well over a metre by these layers). The project's real structural wall layers
+      // ("S-WALL", "A-Plan-Wall", "WT WALL", "RC PARDI") are unaffected by this exclusion.
+      if (/^A-WALL(-|$)/i.test(suffix)) return false;
+      return supportLayerPattern.test(suffix) && !/CUT|SHAFT|VOID|OPEN|BEAM\s*(NO|SIZE)|CILL|SILL/i.test(suffix);
     })
     .map((item) => {
       let bounds = null;
@@ -2107,6 +2130,7 @@ function extractBeamIdFromMixedText(value = "") {
 
 module.exports = {
   cleanCadText,
+  extractBeamDepthDefaultNote,
   hasPositiveBeamNumber,
   canonicalBeamId,
   uniqueStrings,

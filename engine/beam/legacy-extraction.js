@@ -9,6 +9,7 @@ const {
   cleanCadText,
   dimensionOrientationFromEndpoints,
   distance,
+  extractBeamDepthDefaultNote,
   extractBeamIdFromMixedText,
   finiteMax,
   finiteMin,
@@ -382,7 +383,10 @@ function localBeamSizesFromTextEntities(textEntities = [], linkedBeamSizeById = 
   return Object.values(linkedBeamSizeById || {}).concat(textEntities
     .map((item) => ({ ...item, size: parseSizeText(item.text) }))
     .filter((item) => item.size && Number.isFinite(item.x) && Number.isFinite(item.y))
-    .filter((item) => !/^QSS_/i.test(item.layer || "")));
+    .filter((item) => !/^QSS_/i.test(item.layer || ""))
+    // An architectural xref's room-label text (e.g. "TOILET 2450 X 1650") matches the same
+    // "NNNxNNN" pattern as a real beam section callout; without this it gets treated as one.
+    .filter((item) => !isXrefSourcedEntity(item)));
 }
 
 function dimensionSpanEvidence(dimension) {
@@ -715,7 +719,25 @@ function mergeCollinearBeamSpan(seed, beamLines, sizeMm = 0, ownLabel = null, be
   return { line: mergedLine, mergedLengthMm: spanEnd - spanStart, mergedSegments };
 }
 
-function trimBeamSpanAtOtherLabels(line, label, beamLabels) {
+// The merged span can reach well past this beam's own drawn geometry (into a neighbour's
+// absorbed stub - see mergeCollinearBeamSpan), so "our own segment" is whichever raw merged
+// segment sits nearest this label, not the merged line's own far edge.
+function ownSegmentIntervalNearestPosition(segments, orientation, position) {
+  let best = null;
+  let bestDistance = Infinity;
+  for (const seg of segments) {
+    const start = orientation === "horizontal" ? Math.min(seg.x, seg.x2) : Math.min(seg.y, seg.y2);
+    const end = orientation === "horizontal" ? Math.max(seg.x, seg.x2) : Math.max(seg.y, seg.y2);
+    const dist = position < start ? start - position : position > end ? position - end : 0;
+    if (dist < bestDistance) {
+      bestDistance = dist;
+      best = { start, end };
+    }
+  }
+  return best;
+}
+
+function trimBeamSpanAtOtherLabels(line, label, beamLabels, segments = []) {
   if (!line || !label) return { line, trimmedBy: null };
   const orientation = lineOrientation(line);
   if (orientation === "sloped") return { line, trimmedBy: null };
@@ -735,15 +757,21 @@ function trimBeamSpanAtOtherLabels(line, label, beamLabels) {
     .sort((a, b) => Math.abs(a.position - labelPos) - Math.abs(b.position - labelPos));
 
   if (!conflicts.length) return { line, trimmedBy: null };
+  const ownSegment = segments.length ? ownSegmentIntervalNearestPosition(segments, orientation, labelPos) : null;
   let nextStart = start;
   let nextEnd = end;
   let trimmedBy = null;
   for (const conflict of conflicts) {
-    const cut = (conflict.position + labelPos) / 2;
+    const midpoint = (conflict.position + labelPos) / 2;
     if (conflict.position > labelPos) {
+      // Cut at our own segment's real end, not the label midpoint - confirmed against the real
+      // drawing: MB39's own drawn end sits at 3071513, but the midpoint against T2B40's label
+      // landed at 3072208, still 700mm inside T2B40's absorbed stub.
+      const cut = ownSegment && ownSegment.end >= labelPos && ownSegment.end <= midpoint ? ownSegment.end : midpoint;
       nextEnd = Math.min(nextEnd, cut);
       trimmedBy = conflict.label.text;
     } else {
+      const cut = ownSegment && ownSegment.start <= labelPos && ownSegment.start >= midpoint ? ownSegment.start : midpoint;
       nextStart = Math.max(nextStart, cut);
       trimmedBy = conflict.label.text;
     }
@@ -1310,6 +1338,18 @@ function pairedBeamFacesForLabel(label, orientedLines, widthMm = 0) {
       lengthM: round3(item.lengthMm / 1000),
     })),
   };
+}
+
+// The drawing's own general note says beam depth is fixed (650mm here) but "WIDTH AS PER PLAN" -
+// i.e. width must be read off the beam's own drawn parallel edges, not a text callout, whenever
+// no size text sits close enough to trust. Reuses pairedBeamFacesForLabel's own edge-pairing
+// logic (overlap %, distance bounds) with a zero seed width, which it already tolerates via its
+// own defaults, so this needs no new geometry-matching logic.
+function geometricWidthMmForLabel(label, beamLinesForLabel) {
+  const candidate = pairedBeamFacesForLabel(label, beamLinesForLabel, 0);
+  if (!candidate || candidate.axes.length !== 2) return 0;
+  const gapMm = Math.abs(candidate.axes[1] - candidate.axes[0]);
+  return gapMm >= 120 && gapMm <= 900 ? Math.round(gapMm) : 0;
 }
 
 function supportItemsOnBeamAxis(supports, orientation, axis, widthMm = 0) {
@@ -2837,6 +2877,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     .filter((item) => ["TEXT", "MTEXT", "ATTRIB", "ATTDEF"].includes(item.type) && item.text)
     .map((item) => ({ ...item, text: cleanCadText(item.text) }));
   const supports = supportOutlinesFromDxf(entities);
+  const beamDepthDefault = extractBeamDepthDefaultNote(textEntities);
 
   const beamLabels = textEntities
     .map((item) => ({ ...item, text: canonicalBeamId(item.text) || item.text }))
@@ -2847,7 +2888,10 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
   const beamSizes = linkedBeamSizes.concat(textEntities
     .map((item) => ({ ...item, size: parseSizeText(item.text) }))
     .filter((item) => item.size && Number.isFinite(item.x) && Number.isFinite(item.y))
-    .filter((item) => !/^QSS_/i.test(item.layer || "")));
+    .filter((item) => !/^QSS_/i.test(item.layer || ""))
+    // An architectural xref's room-label text (e.g. "TOILET 2450 X 1650") matches the same
+    // "NNNxNNN" pattern as a real beam section callout; without this it gets treated as one.
+    .filter((item) => !isXrefSourcedEntity(item)));
 
   // Xref blocks (e.g. "XR_T2_Column_Typ-Fl$0$AS-BEAM") insert a typical-floor beam layout as a
   // visual reference overlay; its geometry does not necessarily match this specific floor's
@@ -2855,6 +2899,18 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
   // tower's own xref (unlike support faces, where the tower's own column-grid xref is trustworthy).
   const beamLines = entities
     .filter((item) => isBeamGeometryLayer(item.layer || "") && item.type === "LINE" && !isXrefSourcedEntity(item))
+    .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y) && Number.isFinite(item.x2) && Number.isFinite(item.y2))
+    .map((item) => ({ ...item, lengthMm: lineLength(item), ...lineMinMax(item) }))
+    .filter((item) => item.lengthMm > 250);
+  // BEAM NO layers normally hold only label leader lines and must stay excluded from real beam
+  // geometry (isBeamGeometryLayer), but this drawing occasionally draws a beam's own second
+  // (outer) face on that layer instead of its usual beam-geometry layer (confirmed against the
+  // real drawing: T2B85/T2B86's outer face sits exactly 300mm from their POD BEAM inner face on
+  // a "BEAM NO" layer). Kept as a separate, narrower pool - only consulted for width detection,
+  // never for span length/trimming - so a genuine short leader line can't be mistaken for a beam
+  // edge there (geometricWidthMmForLabel's own overlap-percentage requirement rejects those).
+  const beamNoWidthEdgeLines = entities
+    .filter((item) => /BEAM\s*NO/i.test(item.layer || "") && item.type === "LINE" && !isXrefSourcedEntity(item))
     .filter((item) => Number.isFinite(item.x) && Number.isFinite(item.y) && Number.isFinite(item.x2) && Number.isFinite(item.y2))
     .map((item) => ({ ...item, lengthMm: lineLength(item), ...lineMinMax(item) }))
     .filter((item) => item.lengthMm > 250);
@@ -2881,11 +2937,30 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     const physicalOrientation = line.item ? lineOrientation(line.item) : labelOrientation;
     const physicalBeamLines = beamLines.filter((item) => lineOrientation(item) === physicalOrientation);
     const size = nearestBeamSizeForLabel(beamSizes, label, line.item);
-    const widthMm = size.item?.size.widthMm || 0;
-    const depthMm = size.item?.size.depthMm || 0;
     const beamLinesForLabel = physicalBeamLines.length ? physicalBeamLines : (orientedBeamLines.length ? orientedBeamLines : beamLines);
+    // A size text more than a band-width away is a borrowed guess, not this beam's own callout -
+    // and "same-line-orientation" alone doesn't bound that distance (it only requires being in the
+    // same 1600mm perpendicular band and the nearest on-line match, which a genuinely different
+    // beam's real callout several metres further along the same row can still win) (confirmed
+    // against the real drawing: T2B40/T2B44/T2B87 each "same-line-orientation"-matched a real but
+    // unrelated "500X650" callout 2.6m-10.6m away and inherited its section). The drawing's own
+    // general note says width must be read off the beam's own drawn parallel edges whenever no
+    // size text sits close enough to trust, so require actual proximity, not just basis, before
+    // trusting a same-line match over that geometry.
+    const sizeIsTrusted = size.basis === "beam-detail-schedule" ||
+      (size.basis === "same-line-orientation" && size.distance <= 1200);
+    const widthEdgePool = sizeIsTrusted
+      ? beamLinesForLabel
+      : beamLinesForLabel.concat(beamNoWidthEdgeLines.filter((item) => lineOrientation(item) === physicalOrientation));
+    const geometricWidthMm = sizeIsTrusted ? 0 : geometricWidthMmForLabel(label, widthEdgePool);
+    const widthMm = geometricWidthMm || size.item?.size.widthMm || 0;
+    // A borrowed, untrusted size text's depth is no more reliable than its width was - fall back
+    // to the drawing's own general beam-depth note rather than taking a distant unrelated beam's
+    // depth at face value (confirmed against the real drawing: T2B48's borrowed match carried a
+    // 1350mm depth from an unrelated element, while the general note fixes it at 650mm).
+    const depthMm = (!sizeIsTrusted && beamDepthDefault?.depthMm) || size.item?.size.depthMm || 0;
     const merged = mergeCollinearBeamSpan(line.item, beamLinesForLabel, widthMm, label, beamLabels);
-    const trimmed = trimBeamSpanAtOtherLabels(merged.line || line.item, label, beamLabels);
+    const trimmed = trimBeamSpanAtOtherLabels(merged.line || line.item, label, beamLabels, merged.mergedSegments);
     const bracketTrimmed = trimBeamSpanToNearestSupportBracket(trimmed.line || merged.line || line.item, label, beamLabels, supports, widthMm);
     const supportTrimmed = trimBeamSpanAtTerminalSupportFace(bracketTrimmed.line || trimmed.line || merged.line || line.item, label, beamLabels, beamLinesForLabel, supports, widthMm);
     const edgeTrimmed = trimBeamSpanByParallelEdgeAgreement(supportTrimmed.line || bracketTrimmed.line || trimmed.line || merged.line || line.item, beamLinesForLabel, widthMm);
@@ -2905,7 +2980,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     const scoredCandidates = scoredMarkedFaceDimensionCandidatesForBeam(grid.dimensions, label, measuredLine, orientation, widthMm)
       .concat(scoredCadDimensionCandidatesForSpan(grid.dimensions, measuredLine, orientation));
     return {
-      label, beamKey, line, size, widthMm, depthMm, beamLinesForLabel, merged, trimmed, bracketTrimmed,
+      label, beamKey, line, size, widthMm, depthMm, geometricWidthMm, sizeIsTrusted, beamLinesForLabel, merged, trimmed, bracketTrimmed,
       supportTrimmed, edgeTrimmed, extended, measuredLine, geometryLengthMm, finalGeometryLengthMm,
       orientation, scoredCandidates,
     };
@@ -2916,7 +2991,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
 
   const rows = precomputed.map((pre) => {
     const {
-      label, beamKey, line, size, widthMm, depthMm, beamLinesForLabel, merged, trimmed, bracketTrimmed,
+      label, beamKey, line, size, widthMm, depthMm, geometricWidthMm, sizeIsTrusted, beamLinesForLabel, merged, trimmed, bracketTrimmed,
       supportTrimmed, edgeTrimmed, extended, measuredLine, geometryLengthMm, finalGeometryLengthMm, orientation,
     } = pre;
     const rawCadDimension = cadDimensionForSpan(grid.dimensions, measuredLine, orientation, { beamKey, ownerByKey });
@@ -3074,8 +3149,10 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
         })),
         sizeBasis: sizeFromLinkedSchedule
           ? `Beam size read from linked beam detail schedule for ${label.text}.`
-          : size.basis === "same-line-orientation"
+          : sizeIsTrusted
           ? "Same beam line and same text orientation; propagated until another size is mentioned."
+          : geometricWidthMm
+          ? `Size text was not close enough to trust; width measured from the beam's own drawn parallel edges${beamDepthDefault?.depthMm ? " and depth taken from the drawing's general beam-depth note" : ""} per the drawing's general note.`
           : "Fallback size text; review if drawing has another size on this beam line.",
         sideLengthBasis: support.needsReview
           ? "Side length equals beam drawn length until wall/support extension is resolved."
