@@ -961,8 +961,17 @@ function extractGridEvidence(entities) {
     (axis) => axis.distanceMm,
   );
 
+  // A "Typ-Fl" xref block inserts a reference floor's own grid dimension chain (spacing
+  // between column gridlines) alongside the real drawing, on both the tower's own xref and an
+  // adjacent tower's (whichever one happens to be xref'd here) - same layer suffix
+  // "AS-GRID-DIMS" either way. A grid-to-grid spacing is a different measurement from a beam's
+  // own face-to-face span even when it is this tower's own grid, and it is never this specific
+  // floor's live geometry, so it must never be matched to a beam as if it were that beam's own
+  // measured/marked dimension (confirmed against the real drawing: T2B58A and T2B73 each had a
+  // wrong xref grid dimension - 2670mm and 1675mm respectively - pulled in as if it were the
+  // beam's own CAD dimension, when the correct length came from geometry in both cases).
   const trueDimensions = entities
-    .filter((item) => item.type === "DIMENSION" && Number.isFinite(item.actualMeasurement))
+    .filter((item) => item.type === "DIMENSION" && Number.isFinite(item.actualMeasurement) && !isXrefSourcedEntity(item))
     .map((item) => {
       const actualValue = item.actualMeasurement > 100 && item.actualMeasurement < 100000 ? item.actualMeasurement : 0;
       const visibleValue = visibleDimensionValueMm(item, actualValue);
@@ -985,6 +994,7 @@ function extractGridEvidence(entities) {
     })
     .filter(Boolean);
   const textDimensions = allTextEntities
+    .filter((item) => !isXrefSourcedEntity(item))
     .map(dimensionEvidenceFromNumericText)
     .filter(Boolean);
   const dimensions = mergeDimensionEvidence(trueDimensions, textDimensions);
