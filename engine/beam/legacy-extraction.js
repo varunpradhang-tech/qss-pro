@@ -224,18 +224,23 @@ function recoverNamedBeamRowsFromMarkedDimensions({ fileName, role, beamLabels, 
     if (!(widthMm > 0 && depthMm > 0)) continue;
     const markedFaceDimensions = markedFaceDimensionsNearLabel(dimensions, label, orientation, widthMm);
     if (!markedFaceDimensions.length) continue;
-    const rawMarkedFaceValuesMm = markedFaceDimensions
-      .map((dimension) => Number(dimension.valueMm || 0))
-      .filter((value) => value > 0)
-      .sort((a, b) => a - b);
-    if (!rawMarkedFaceValuesMm.length) continue;
     // markedFaceDimensionsNearLabel's search window is intentionally generous (it has to
     // find dimensions that may sit several metres from the label), which means it can
-    // return dimensions that have nothing to do with this beam's actual span (a nearby
-    // column/support width, an offset annotation, etc). Reject the whole candidate set
-    // for this label unless it passes the same plausibility check extractBeamRowsFromDxf
-    // already applies to its own geometry-based candidates (QSS-BEAM-005) - without this,
-    // a single spurious small value silently becomes the "bottom length" below.
+    // return dimensions that have nothing to do with this beam's actual span (an overall/grid
+    // dimension, a nearby column/support width, an offset annotation, etc). Drop any candidate
+    // no single named beam could plausibly span before it ever reaches the credibility check or
+    // min/max selection below - dropping the individual bad value (rather than the whole
+    // candidate set just because one of several values is implausible) keeps a genuinely good
+    // smaller value usable instead of losing the beam entirely.
+    const rawMarkedFaceValuesMm = markedFaceDimensions
+      .map((dimension) => Number(dimension.valueMm || 0))
+      .filter((value) => value > 0 && value <= MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM)
+      .sort((a, b) => a - b);
+    if (!rawMarkedFaceValuesMm.length) continue;
+    // Reject the remaining candidate set unless it passes the same plausibility check
+    // extractBeamRowsFromDxf already applies to its own geometry-based candidates
+    // (QSS-BEAM-005) - without this, a single spurious small value silently becomes the
+    // "bottom length" below.
     if (!markedFaceDimensionsAreCredibleBeamRun(rawMarkedFaceValuesMm, 0, widthMm)) continue;
     // Even when the set as a whole is credible (its largest value is plausible), a mix of
     // one real span dimension and one unrelated small one can still slip through - drop any
@@ -245,7 +250,9 @@ function recoverNamedBeamRowsFromMarkedDimensions({ fileName, role, beamLabels, 
     const markedFaceValuesMm = plausibleFaceValuesMm.length ? plausibleFaceValuesMm : rawMarkedFaceValuesMm;
     const hasTwoMarkedFaceLengths = markedFaceValuesMm.length >= 2 &&
       (markedFaceValuesMm[markedFaceValuesMm.length - 1] - markedFaceValuesMm[0]) > Math.max(50, widthMm * 0.5);
-    const bottomLengthMm = hasTwoMarkedFaceLengths ? markedFaceValuesMm[0] : markedFaceValuesMm[0];
+    const bottomLengthMm = hasTwoMarkedFaceLengths
+      ? markedFaceValuesMm[markedFaceValuesMm.length - 1]
+      : markedFaceValuesMm[0];
     const sideFaceLengthSegmentsMm = hasTwoMarkedFaceLengths
       ? [markedFaceValuesMm[0], markedFaceValuesMm[markedFaceValuesMm.length - 1]]
       : [];
@@ -413,6 +420,13 @@ function nearestBeamLabelForDimension(beamLabels = [], dimension) {
   return candidates[0] || { item: null, distance: Infinity };
 }
 
+// A single named beam member practically never spans more than ~20m column-to-column; the
+// 60000mm pre-filter above exists to admit any plausible dimension entity into the candidate
+// pool at all, but matching one specific value to one specific label needs a much tighter cap -
+// otherwise an overall/grid dimension that happens to sit near a short beam's label (its span
+// trivially contains that label's position) gets mistaken for that beam's own length.
+const MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM = 20000;
+
 function extractMarkedDimensionBeamRowsByDimensions({ fileName, role, beamLabels, beamSizes, slabInfo, grid }) {
   const dimensions = (Array.isArray(grid?.dimensions) ? grid.dimensions : [])
     .filter((dimension) => /visible-dimension-text|actual-measurement|text-dimension-label/i.test(String(dimension.valueSource || "")))
@@ -420,6 +434,7 @@ function extractMarkedDimensionBeamRowsByDimensions({ fileName, role, beamLabels
   const rows = [];
   const seen = new Set();
   for (const dimension of dimensions) {
+    if (Number(dimension.valueMm || 0) > MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM) continue;
     const span = dimensionSpanEvidence(dimension);
     if (!["horizontal", "vertical"].includes(span.orientation)) continue;
     const labelMatch = nearestBeamLabelForDimension(beamLabels, { ...dimension, orientation: span.orientation });
@@ -2148,7 +2163,7 @@ function markedFaceDimensionsAreCredibleBeamRun(valuesMm = [], geometryMm = 0, w
   const minValue = values[0];
   const maxValue = values[values.length - 1];
   const geometry = Number(geometryMm || 0);
-  if (!geometry) return maxValue >= Math.max(1200, widthMm * 3);
+  if (!geometry) return maxValue >= Math.max(1200, widthMm * 3) && maxValue <= MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM;
   const agreementTolerance = Math.max(125, Math.min(500, geometry * 0.08));
   if (Math.abs(maxValue - geometry) <= agreementTolerance || Math.abs(minValue - geometry) <= agreementTolerance) {
     return true;
