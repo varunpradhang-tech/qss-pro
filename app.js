@@ -1355,8 +1355,25 @@ async function extractFramingQuantities() {
   const shouldRetryDeepSlab = ["slab", "raft"].includes(itemType) &&
     !(data.rows || []).length &&
     /Slab extraction blocked|false closed panel|Fast extraction skipped whole-drawing topology fallback/i.test(fastWarnings);
-  if (shouldRetryDeepSlab) {
-    updateExtractionProgress(62, "Fast slab read could not verify slab quantity rows. Trying deep slab topology once.");
+  // Fast-mode beam rows come from matching a marked CAD dimension text to the nearest beam
+  // label; when that direct pairing fails, a weaker fallback reader recovers the row instead
+  // (evidence.recoveredAfterDirectPairingFailed) - and it can grab a dimension that only
+  // coincidentally sits near the label rather than actually describing that beam's own span
+  // (confirmed against the real drawing: T2B1 read 76.17m instead of 4.234m this way). These
+  // rows don't reliably get flagged needsReview, so a high recovery-reader share is the signal
+  // that fast mode is actually struggling on this drawing, not the review flag itself.
+  const beamRows = itemType === "beam" ? (data.rows || []) : [];
+  const beamRecoveredRatio = beamRows.length
+    ? beamRows.filter((row) => row.evidence?.recoveredAfterDirectPairingFailed).length / beamRows.length
+    : 0;
+  const shouldRetryDeepBeam = itemType === "beam" && (!beamRows.length || beamRecoveredRatio > 0.3);
+  if (shouldRetryDeepSlab || shouldRetryDeepBeam) {
+    updateExtractionProgress(
+      62,
+      shouldRetryDeepBeam
+        ? "Fast beam read relied on weaker fallback matching for most beams. Trying deep beam geometry once."
+        : "Fast slab read could not verify slab quantity rows. Trying deep slab topology once.",
+    );
     const deepData = await postJson(
       "/api/extract-framing-quantities",
       { ...basePayload, extractionProfile: "deep" },
