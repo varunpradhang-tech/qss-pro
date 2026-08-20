@@ -1401,8 +1401,11 @@ function chooseMeasuredDimension({ cadDimension, gridDimension, geometryMm, pref
   // rounding tolerance, confirmed repeatedly against the real drawing); the old 2x threshold
   // let disagreements as large as 62% (a real observed case: 2.61m marked vs 4.23m actual)
   // still pass as "close enough", when that is a much stronger signal of a mismatched
-  // dimension than of a wrong geometry measurement.
-  const disagreementToleranceMm = Math.max(150, geometry * 0.15);
+  // dimension than of a wrong geometry measurement. 15% was still too loose: T2B3's confirmed
+  // 2.79m geometry lost to a 2.39m mismatched dimension only 14.3% away (400mm, just inside
+  // the 418.5mm band); 12% correctly rejects that case (334.8mm band) while leaving every
+  // other currently-agreeing row (checked against the full real-drawing extraction) untouched.
+  const disagreementToleranceMm = Math.max(150, geometry * 0.12);
   const cadWildlyDisagreesWithGeometry = cadMm > 0 && geometry > 0 && Math.abs(cadMm - geometry) > disagreementToleranceMm;
   const gridWildlyDisagreesWithGeometry = gridMm > 0 && geometry > 0 && Math.abs(gridMm - geometry) > disagreementToleranceMm;
 
