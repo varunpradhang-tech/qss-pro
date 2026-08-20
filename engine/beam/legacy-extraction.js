@@ -641,7 +641,7 @@ function extractMarkedDimensionBeamRowsFast({ fileName, role, textEntities, slab
   };
 }
 
-function mergeCollinearBeamSpan(seed, beamLines, sizeMm = 0) {
+function mergeCollinearBeamSpan(seed, beamLines, sizeMm = 0, ownLabel = null, beamLabels = []) {
   if (!seed) return { line: seed, mergedLengthMm: 0, mergedSegments: [] };
   const orientation = lineOrientation(seed);
   if (orientation === "sloped") return { line: seed, mergedLengthMm: seed.lengthMm || lineLength(seed), mergedSegments: [seed] };
@@ -651,6 +651,27 @@ function mergeCollinearBeamSpan(seed, beamLines, sizeMm = 0) {
   const seedEnd = orientation === "horizontal" ? Math.max(seed.x, seed.x2) : Math.max(seed.y, seed.y2);
   const axisToleranceMm = Math.max(80, sizeMm * 0.35);
   const gapToleranceMm = Math.max(700, sizeMm * 1.35);
+  const labelAxisToleranceMm = 900;
+  // A candidate line segment that itself sits under a DIFFERENT beam's own label is that beam's
+  // own physical run, not an unlabelled continuation of this one - even when it is collinear
+  // enough (within axis tolerance) to look like the same line (confirmed against the real
+  // drawing: B31's own 4.58m segment sits on a row 70mm off B32's own 2.024m segment - close
+  // enough to pass the axis tolerance meant for a single beam's own minor line jitter - and got
+  // absorbed into B32's span here; the later "trim at other labels" step only cuts at the
+  // midpoint between label positions, which is correct only when the merged members happen to
+  // share a length, and wrong whenever they differ, as every one of B31-B34 does). Block merging
+  // in any candidate whose own span contains a different beam's label.
+  function candidateBelongsToDifferentLabel(candidateStart, candidateEnd) {
+    if (!ownLabel) return false;
+    return beamLabels.some((item) => {
+      if (item === ownLabel || item.text === ownLabel.text) return false;
+      if (textOrientation(item) !== orientation) return false;
+      const pos = orientation === "horizontal" ? item.x : item.y;
+      const itemAxis = orientation === "horizontal" ? item.y : item.x;
+      if (Math.abs(itemAxis - axisValue) > labelAxisToleranceMm) return false;
+      return pos >= candidateStart - 50 && pos <= candidateEnd + 50;
+    });
+  }
 
   const candidates = beamLines
     .filter((line) => lineOrientation(line) === orientation)
@@ -672,11 +693,11 @@ function mergeCollinearBeamSpan(seed, beamLines, sizeMm = 0) {
       if (!touches) continue;
       const nextStart = Math.min(spanStart, candidate.start);
       const nextEnd = Math.max(spanEnd, candidate.end);
-      if (nextStart !== spanStart || nextEnd !== spanEnd) {
-        spanStart = nextStart;
-        spanEnd = nextEnd;
-        changed = true;
-      }
+      if (nextStart === spanStart && nextEnd === spanEnd) continue;
+      if (candidateBelongsToDifferentLabel(candidate.start, candidate.end)) continue;
+      spanStart = nextStart;
+      spanEnd = nextEnd;
+      changed = true;
     }
   }
 
@@ -2631,23 +2652,18 @@ function applyVerifiedBeamMeasurementRules(rows) {
       .concat(verifiedT2B1);
   }
 
+  // Independently re-verified every entry in this table against the real drawing (raw drawn
+  // geometry, support-face touch distances, and merge/trim evidence) after fixing the underlying
+  // bugs this session (xref beam-line/grid-dimension contamination, local support-face lookup,
+  // and mergeCollinearBeamSpan gluing separately-numbered same-line beams together). 19 of the
+  // original 24 entries turned out to be exactly what the general pipeline now computes on its
+  // own with no override needed, so they were removed as redundant. The 5 remaining below still
+  // disagree with the general pipeline's geometry (T2B47/T2B48/T2B49 by 200mm-2.9m) or have not
+  // yet been re-derived from first principles (T2B20/T2B26) - kept as explicit overrides until
+  // each is individually root-caused rather than silently trusting either side.
   const t2HorizontalCorrections = {
-    T2B13: { bottomLengthM: 1.752, sideLengthM: 1.752, rule: "Short beam measured from beam side to next RCC member; sides stop at the same physical run and must not continue to the far face of the next RCC member." },
-    T2B19: { bottomLengthM: 2.25, sideLengthM: 2.25, rule: "Simple short beam; bottom and both sides use the same verified CAD length." },
     T2B20: { bottomLengthM: 2.25, sideLengthM: 2.25, rule: "Simple short beam; duplicate continuation fragments are collapsed into one member." },
-    T2B21: { bottomLengthM: 2.25, sideLengthM: 2.25, rule: "Without column cap, beam bottom and sides use the same physical run. Side run was correct; bottom must match it." },
-    T2B22: { bottomLengthM: 2.45, sideLengthM: 2.45, rule: "Without column cap, beam bottom and sides use the same physical run. Side run was correct; bottom must match it." },
-    T2B25: { bottomLengthM: 5.1, sideLengthM: 5.1, rule: "Simple beam without special edge or offset; use full verified CAD run." },
     T2B26: { bottomLengthM: 1.05, sideLengthM: 1.05, rule: "Short beam; app must not merge the neighbouring bay/continuation into this member." },
-    T2B31: { bottomLengthM: 4.58, sideLengthM: 4.58, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B32: { bottomLengthM: 2.024, sideLengthM: 2.024, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B33: { bottomLengthM: 2.025, sideLengthM: 2.025, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B34: { bottomLengthM: 4.58, sideLengthM: 4.58, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B37: { bottomLengthM: 1.8, sideLengthM: 1.8, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B38: { bottomLengthM: 5.39, sideLengthM: 5.39, rule: "Simple horizontal beam; use verified beam-number run length." },
-    T2B41A: { bottomLengthM: 2.4, sideLengthM: 2.4, rule: "Without column cap, beam sides must match the verified bottom run. User referred to this as T241A; drawing member is T2B41A." },
-    T2B43: { bottomLengthM: 2.39, sideLengthM: 2.39, rule: "Without column cap, beam bottom and sides use the same physical run. Side run was correct; bottom must match it." },
-    T2B46: { bottomLengthM: 2.39, sideLengthM: 2.39, rule: "Short beam; extend to the verified RCC face instead of stopping at the shorter detected fragment." },
     T2B47: { bottomLengthM: 2.575, sideLengthM: 2.575, rule: "Beam continues after the 0.980 m joint; one side is dotted for the full 2.575 m and the opposite continuous outside edge proves the same physical run." },
     T2B48: {
       bottomLengthM: 0.465,
@@ -2656,11 +2672,6 @@ function applyVerifiedBeamMeasurementRules(rows) {
       rule: "Narrow beam: bottom is 0.465 m; outer side is 0.700 m and inner side equals bottom length.",
     },
     T2B49: { bottomLengthM: 4.41, sideLengthM: 4.41, rule: "Beam side was correct but bottom must use the same verified physical run." },
-    T2B50: { bottomLengthM: 4.625, sideLengthM: 4.625, rule: "Simple beam; bottom and sides use the same verified CAD length." },
-    T2B51: { bottomLengthM: 2.93, sideLengthM: 2.93, rule: "Simple beam; no false deduction is allowed." },
-    T2B52: { bottomLengthM: 2.93, sideLengthM: 2.93, rule: "Simple beam; side length must not extend beyond the verified bottom run." },
-    T2B53: { bottomLengthM: 4.625, sideLengthM: 4.625, rule: "Simple beam; bottom and sides use the same verified CAD length." },
-    T2B54: { bottomLengthM: 1.25, sideLengthM: 1.25, rule: "Short beam; bottom is 1.250 m and duplicate continuation fragments are collapsed." },
   };
 
   Object.entries(t2HorizontalCorrections).forEach(([beamId, correction]) => {
@@ -2855,7 +2866,7 @@ function extractBeamRowsFromDxf(fileName, role, entities, slabInfo, grid = { dim
     const widthMm = size.item?.size.widthMm || 0;
     const depthMm = size.item?.size.depthMm || 0;
     const beamLinesForLabel = physicalBeamLines.length ? physicalBeamLines : (orientedBeamLines.length ? orientedBeamLines : beamLines);
-    const merged = mergeCollinearBeamSpan(line.item, beamLinesForLabel, widthMm);
+    const merged = mergeCollinearBeamSpan(line.item, beamLinesForLabel, widthMm, label, beamLabels);
     const trimmed = trimBeamSpanAtOtherLabels(merged.line || line.item, label, beamLabels);
     const bracketTrimmed = trimBeamSpanToNearestSupportBracket(trimmed.line || merged.line || line.item, label, beamLabels, supports, widthMm);
     const supportTrimmed = trimBeamSpanAtTerminalSupportFace(bracketTrimmed.line || trimmed.line || merged.line || line.item, label, beamLabels, beamLinesForLabel, supports, widthMm);
