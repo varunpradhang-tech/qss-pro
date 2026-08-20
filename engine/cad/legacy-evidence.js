@@ -1265,6 +1265,14 @@ function markedFaceDimensionsForBeam(dimensions, label, span, orientation, width
     .filter((item) => item.dimension.valueMm >= 250 && item.dimension.valueMm <= 60000)
     .filter((item) => item.axisDiff <= axisLimit)
     .filter((item) => item.nearLabelSpan || item.labelDistance <= alongLimit || item.overlap > 250)
+    // alongLimit can reach several metres, wide enough to also catch a neighbouring beam's own
+    // dimension when beams sit only a couple of metres apart (confirmed against the real
+    // drawing: T2B1's and T2B2's labels each pulled in the other's dimension text this way).
+    // A dimension that actually describes THIS beam's own span should overlap the beam's own
+    // measured line geometry (spanStart..spanEnd), not just sit somewhere along the same axis -
+    // require that whenever the beam's own span is known, falling back to the looser proximity
+    // filters above only when it isn't (span degenerate/unavailable).
+    .filter((item) => !(spanEnd > spanStart) || item.overlap > 0)
     .sort((a, b) => (a.axisDiff + a.labelDistance * 0.1 - a.overlap * 0.02) - (b.axisDiff + b.labelDistance * 0.1 - b.overlap * 0.02));
   const unique = [];
   for (const item of candidates) {
