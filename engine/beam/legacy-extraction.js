@@ -2168,14 +2168,14 @@ function markedFaceDimensionsAreCredibleBeamRun(valuesMm = [], geometryMm = 0, w
   const maxValue = values[values.length - 1];
   const geometry = Number(geometryMm || 0);
   if (!geometry) return maxValue >= Math.max(1200, widthMm * 3) && maxValue <= MAX_PLAUSIBLE_NAMED_BEAM_SPAN_MM;
+  // When drawn geometry is known, a marked min/max pair is only credible as this beam's own
+  // inner/outer face dimensions if one of them actually agrees with the measured line - a loose
+  // "somewhere between 75% and 125% of geometry" band let unrelated nearby dimension text (e.g.
+  // an adjacent bay's or a partial-span/offset dimension) pass as if it were this beam's face
+  // pair. Verified against the real T2 drawing: every case where the old wide band was the only
+  // thing accepting the pair turned out to disagree with the correct (geometry-based) length.
   const agreementTolerance = Math.max(125, Math.min(500, geometry * 0.08));
-  if (Math.abs(maxValue - geometry) <= agreementTolerance || Math.abs(minValue - geometry) <= agreementTolerance) {
-    return true;
-  }
-  if (maxValue < geometry * 0.75) return false;
-  if (minValue < Math.max(widthMm * 1.5, geometry * 0.35) && maxValue > geometry * 1.35) return false;
-  if (geometry > 1200 && minValue < Math.max(widthMm * 1.25, geometry * 0.22)) return false;
-  return maxValue >= geometry * 0.75 && minValue <= geometry * 1.25;
+  return Math.abs(maxValue - geometry) <= agreementTolerance || Math.abs(minValue - geometry) <= agreementTolerance;
 }
 
 function applyMixedSideSlabThicknessRules(rows) {
