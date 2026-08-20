@@ -6774,7 +6774,17 @@ async function readOneFile(file, index, tempDir) {
   return parseScheduleText(result.data.text || "", sheetNumber, file.name, "ocr", grid);
 }
 
+function cleanupTempDir(tempDir) {
+  if (!tempDir) return;
+  try {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  } catch (cleanupError) {
+    console.error("[QSS Pro] Failed to clean up temp dir", tempDir, cleanupError);
+  }
+}
+
 async function handleReadSchedules(req, res) {
+  let tempDir;
   try {
     const body = JSON.parse(await readBody(req));
     const files = Array.isArray(body.files) ? body.files : [];
@@ -6783,7 +6793,7 @@ async function handleReadSchedules(req, res) {
       return;
     }
 
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-ocr-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-ocr-"));
     const sheets = [];
     for (let index = 0; index < files.length; index += 1) {
       sheets.push(await readOneFile(files[index], index, tempDir));
@@ -6792,10 +6802,13 @@ async function handleReadSchedules(req, res) {
     sendJson(res, 200, { ok: true, rows, sheets });
   } catch (error) {
     sendSafeError(res, 500, "Column schedule extraction failed", error);
+  } finally {
+    cleanupTempDir(tempDir);
   }
 }
 
 async function handleReadDrawingEvidence(req, res) {
+  let tempDir;
   try {
     const body = JSON.parse(await readBody(req));
     const files = Array.isArray(body.files) ? body.files : [];
@@ -6804,7 +6817,7 @@ async function handleReadDrawingEvidence(req, res) {
       return;
     }
 
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-drawing-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-drawing-"));
     const drawings = [];
     for (let index = 0; index < files.length; index += 1) {
       drawings.push(await readOneDrawingEvidence(files[index], index, tempDir));
@@ -6824,10 +6837,13 @@ async function handleReadDrawingEvidence(req, res) {
     sendJson(res, 200, { ok: true, drawings, combined });
   } catch (error) {
     sendSafeError(res, 500, "Drawing evidence extraction failed", error);
+  } finally {
+    cleanupTempDir(tempDir);
   }
 }
 
 async function handleExtractFramingQuantities(req, res) {
+  let tempDir;
   try {
     const body = JSON.parse(await readBody(req));
     const files = Array.isArray(body.files) ? body.files : [];
@@ -6851,7 +6867,7 @@ async function handleExtractFramingQuantities(req, res) {
       return;
     }
 
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-framing-"));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "qss-pro-framing-"));
     const linkedSchedules = collectLinkedDetailSchedules(files, tempDir);
     const plans = [];
     for (let index = 0; index < files.length; index += 1) {
@@ -6943,6 +6959,8 @@ async function handleExtractFramingQuantities(req, res) {
     });
   } catch (error) {
     sendSafeError(res, 500, "Framing quantity extraction failed", error);
+  } finally {
+    cleanupTempDir(tempDir);
   }
 }
 
