@@ -1,0 +1,27 @@
+# Render deploy config for the QSS Pro backend engine.
+#
+# This runs the actual DXF/PDF beam-slab-raft-column takeoff engine (server.js). It cannot
+# run as a Netlify Function - large drawings (60MB+ DXF, tens of thousands of entities) take
+# several minutes to process in deep mode, far past Netlify's Function execution/payload
+# limits. Netlify should only host the static frontend and proxy /api/* here (see netlify.toml).
+#
+# DWG upload is disabled on this deployment: DWG conversion needs ODA File Converter, a native
+# Windows GUI tool, which isn't available on Render's Linux runtime. Users upload DXF/PDF/image
+# files instead - see app.js's assertDwgConversionReady(), which already reports this cleanly.
+# PDF/image column-schedule reading (grid detection, OCR) also needs a Python runtime that
+# isn't provisioned here by default; those endpoints already degrade to a clear "not available"
+# warning rather than failing (see PYTHON_UNAVAILABLE_MESSAGE in server.js). Set QSS_PYTHON_PATH
+# if you add a Python buildpack/runtime later and want those features back.
+services:
+  - type: web
+    name: qss-pro
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/server-status
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_VERSION
+        value: 20.11.1

@@ -4,7 +4,6 @@ const path = require("path");
 const os = require("os");
 const crypto = require("crypto");
 const { spawnSync } = require("child_process");
-const Module = require("module");
 const { pathToFileURL } = require("url");
 
 const legacyEvidence = require("./engine/cad/legacy-evidence.js");
@@ -75,21 +74,18 @@ const {
   extractSlabRowsFromDxf,
 } = require("./engine/slab/legacy-extraction.js");
 
-process.env.NODE_PATH = [
-  process.env.NODE_PATH,
-  "C:/Users/RICPL/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/.pnpm/node_modules",
-]
-  .filter(Boolean)
-  .join(path.delimiter);
-Module._initPaths();
-
-const { createWorker } = require("C:/Users/RICPL/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/tesseract.js");
+const { createWorker } = require("tesseract.js");
 
 const root = __dirname;
 const workspaceRoot = path.resolve(root, "..", "..");
 const workDir = path.join(workspaceRoot, "work");
-const { QSS_CANONICAL_RULEBOOK, buildRuleAudit } = require(path.join(workDir, "qss-takeoff-rules.cjs"));
-const pythonExe = "C:\\Users\\RICPL\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe";
+const rulebookModule = require("./engine/rulebook.js");
+const { buildRuleAudit } = require("./engine/review/accuracy-audit.js");
+const QSS_CANONICAL_RULEBOOK = {
+  version: rulebookModule.rulebook().version,
+  rules: rulebookModule.rulebook().rules,
+};
+const pythonExe = process.env.QSS_PYTHON_PATH || "";
 const renderScript = path.join(root, "render_pdf_page.py");
 const gridScript = path.join(root, "detect_table_grid.py");
 const pdfEvidenceScript = path.join(root, "extract_pdf_evidence.py");
@@ -283,7 +279,10 @@ async function getOcrWorker() {
   return ocrWorkerPromise;
 }
 
+const PYTHON_UNAVAILABLE_MESSAGE = "PDF/image schedule reading is not available in this environment (no Python runtime configured).";
+
 function detectTableGrid(imagePath) {
+  if (!pythonExe) return { confidence: "needs-review", warning: PYTHON_UNAVAILABLE_MESSAGE };
   const detected = spawnSync(pythonExe, [gridScript, imagePath], { encoding: "utf8" });
   if (detected.status !== 0) {
     return {
@@ -518,6 +517,7 @@ async function parseTakeoffDxfEntities(filePath, options = {}) {
 
 
 function readPdfEvidence(filePath, fileName, role) {
+  if (!pythonExe) return { fileName, role, source: "pdf", warning: PYTHON_UNAVAILABLE_MESSAGE };
   const extracted = spawnSync(pythonExe, [pdfEvidenceScript, filePath], { encoding: "utf8" });
   if (extracted.status !== 0) {
     return {
@@ -6744,6 +6744,15 @@ async function readOneFile(file, index, tempDir) {
   let grid = null;
   if (ext === ".pdf") {
     imagePath = path.join(tempDir, `${sheetNumber}-${safeName(file.name)}.png`);
+    if (!pythonExe) {
+      return {
+        fileName: file.name,
+        sheetNumber,
+        source: "pdf",
+        rows: [],
+        warning: PYTHON_UNAVAILABLE_MESSAGE,
+      };
+    }
     const rendered = spawnSync(pythonExe, [renderScript, inputPath, imagePath], { encoding: "utf8" });
     if (rendered.status !== 0) {
       const detail = rendered.error?.message || rendered.stderr || rendered.stdout || `exit status ${rendered.status}`;
@@ -7018,6 +7027,12 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// Deep-mode extraction on a large drawing can run for several minutes (verified this session:
+// GPL_SIG3-T2/T3, 60MB+ DXF, tens of thousands of entities); Node's default requestTimeout
+// (300s) is too tight for that on a hosted deployment.
+server.requestTimeout = 600000;
+server.headersTimeout = 605000;
+
 server.on("clientError", (error, socket) => {
   console.error("[QSS Pro] Client connection error", error?.message || error);
   if (socket.writable) socket.end("HTTP/1.1 400 Bad Request\r\n\r\n");
@@ -7028,10 +7043,14 @@ process.on("unhandledRejection", (error) => {
 });
 
 const port = Number(process.env.PORT || 4175);
+// Local desktop launches (Start-QSS-Pro.bat, the VBS launcher) rely on this staying on
+// 127.0.0.1 by default; a hosted deployment (e.g. Render) sets HOST=0.0.0.0 explicitly to
+// accept external traffic.
+const host = process.env.HOST || "127.0.0.1";
 
 process.on("uncaughtException", (error) => {
   if (error?.code === "EADDRINUSE") {
-    console.log(`QSS Pro is already running at http://127.0.0.1:${port}/`);
+    console.log(`QSS Pro is already running at http://${host}:${port}/`);
     process.exit(0);
     return;
   }
@@ -7040,7 +7059,7 @@ process.on("uncaughtException", (error) => {
 
 server.on("error", (error) => {
   if (error?.code === "EADDRINUSE") {
-    console.log(`QSS Pro is already running at http://127.0.0.1:${port}/`);
+    console.log(`QSS Pro is already running at http://${host}:${port}/`);
     process.exit(0);
     return;
   }
@@ -7048,6 +7067,6 @@ server.on("error", (error) => {
   process.exit(2);
 });
 
-server.listen(port, "127.0.0.1", () => {
-  console.log(`QSS Pro OCR server running at http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  console.log(`QSS Pro OCR server running at http://${host}:${port}/`);
 });

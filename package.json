@@ -1,0 +1,16 @@
+{
+  "name": "qss-pro",
+  "version": "1.0.0",
+  "description": "QSS Pro - rule-based civil quantity takeoff for structural and architectural drawings",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "tesseract.js": "7.0.0"
+  }
+}

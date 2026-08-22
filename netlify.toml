@@ -1,0 +1,15 @@
+# Netlify hosts only the static frontend (index.html/app.js/styles.css/manifest.json/icon.svg).
+# The actual backend engine (server.js + engine/) runs elsewhere - see render.yaml - because
+# it's a long-running Node process that shells out to native tools and does multi-minute
+# processing on large drawings, none of which Netlify Functions can do.
+#
+# The build step stages just those 5 files into public/ so the rest of the repo (server.js,
+# engine/ rule logic, Python scripts) is never published as a static, publicly-fetchable file.
+#
+# Set BACKEND_URL in the Netlify site's environment variables (Site settings > Environment
+# variables) to your deployed backend's origin, e.g. https://qss-pro.onrender.com - the build
+# command below writes it into a generated _redirects file so app.js's existing same-origin
+# fetch("/api/...") calls get proxied there with no frontend code changes and no CORS setup.
+[build]
+  command = "mkdir -p public && cp index.html app.js styles.css manifest.json icon.svg public/ && printf '/api/*  %s/api/:splat  200\\n' \"${BACKEND_URL:-https://REPLACE-WITH-YOUR-BACKEND-URL}\" > public/_redirects"
+  publish = "public"

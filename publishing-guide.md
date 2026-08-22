@@ -10,9 +10,14 @@ Recommended path: use Capacitor to wrap the web app into Android and iOS apps.
 2. Replace the test `Plan` dropdown with real login/subscription status.
 3. Add payment/subscription backend for Premium access.
 4. Add privacy policy and terms pages.
-5. Decide drawing processing method:
-   - On-device processing, or
-   - Server upload and processing.
+5. Drawing processing method: **server upload and processing**, decided. The DXF/PDF/image
+   takeoff engine (`server.js` + `engine/`) is hosted separately (see `render.yaml`) and the
+   static frontend (Netlify, `netlify.toml`) calls it over HTTPS - both the Capacitor-wrapped
+   mobile apps and the web app hit the same hosted backend. Native DWG upload is not available
+   on this hosted/mobile path (it needs ODA File Converter, a Windows-only tool); users
+   pre-convert DWG to DXF before uploading. On-device processing was ruled out: the engine
+   needs Node, and a single large drawing (60MB+ DXF) takes minutes to process, which isn't
+   practical on a phone.
 6. Add PDF/DXF/DWG parser modules.
 7. Test free vs premium restrictions.
 
